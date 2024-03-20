@@ -2,6 +2,15 @@ import crypto from 'crypto'
 import axios from 'axios'
 import { toQueryString } from '../utils/toQueryString.mjs'
 
+const createAuthenticationSignature = function createAuthenticationSignature(path, message, secret, nonce)  {
+  const secret_buffer = new Buffer(secret, 'base64');
+  const hash= new crypto.createHash('sha256');
+  const hmac= new crypto.createHmac('sha512', secret_buffer);
+  const hash_digest = hash.update(nonce + message).digest('binary');
+  const hmac_digest = hmac.update(path + hash_digest, 'binary').digest('base64');
+  return hmac_digest;
+}
+
 export class BaseWrapper {
   #authentication
   #log
@@ -51,13 +60,21 @@ export class BaseWrapper {
       throw new Error('Authentication is required, but no API key was provided.')
     }
 
-    const { baseEndpoint, queryParams } = this.#prepareEndpoint(endpoint, params)
+    const { queryEndpoint, queryParams } = this.#prepareEndpoint(endpoint, params)
 
     const axiosConfig = {
       method,
-      url: `${this.#baseURLs[baseUrl]}${baseEndpoint}`,
+      url: `${this.#baseURLs[baseUrl]}${queryEndpoint}`,
       headers: {},
       timeout: 5000,
+    }
+
+    if(requiresAuth) {
+      queryParams.nonce = this.#authentication.nonce || new Date() * 1000; // spoof microsecond
+
+      if (this.#authentication.otp) {
+        queryParams.otp = this.#authentication.otp
+      }
     }
 
     // Include params as 'params' for GET and DELETE, 'data' for others
@@ -72,25 +89,22 @@ export class BaseWrapper {
 
     if (requiresAuth) {
       const timestamp = Date.now().toString()
-      const strToSign = `${timestamp}${method}${baseEndpoint}${data}`
-      const sign = crypto.createHmac('sha256', this.#authentication.apiSecret).update(strToSign).digest('base64')
+      const sign = createAuthenticationSignature(
+        queryEndpoint,
+        data,
+        this.#authentication.apiSecret,
+        queryParams.nonce
+      )
 
-      axiosConfig.headers['KC-API-KEY'] = this.#authentication.apiKey
-      axiosConfig.headers['KC-API-SIGN'] = sign
-      axiosConfig.headers['KC-API-TIMESTAMP'] = timestamp
-      axiosConfig.headers['Content-Type'] = 'application/json'
-
-      if (this.#authentication.apiKeyVersion.toString() === '2') {
-        axiosConfig.headers['KC-API-PASSPHRASE'] = crypto.createHmac('sha256', this.#authentication.apiSecret).update(this.#authentication.apiPassphrase).digest('base64')
-        axiosConfig.headers['KC-API-KEY-VERSION'] = 2
-      }
+      axiosConfig.headers['API-Key'] = this.#authentication.apiKey
+      axiosConfig.headers['API-Sign'] = sign
     }
 
     let response
     try {
       response = await axios(axiosConfig)
-      if (!(response.status === 200 && response.data?.code === '200000')) {
-        throw new Error(`${response.data?.code || response.status}: ${response.data?.msg || response.statusText}`)
+      if (Array.isArray(response.data?.error) && response.data.error.length > 0) {
+        throw new Error(error.join(', '))
       }
     } catch (error) {
       throw new Error(error.response ? `${error.response.status}: ${error.response.statusText}` : error.message)
@@ -105,29 +119,29 @@ export class BaseWrapper {
    *
    * @param {string} endpoint - The API endpoint template with path placeholders.
    * @param {Object} params - The parameters object containing both path variable values and query parameters.
-   * @returns {{baseEndpoint: string, queryParams: Object}} An object containing the base endpoint with replaced path placeholders and query parameters.
+   * @returns {{queryEndpoint: string, queryParams: Object}} An object containing the base endpoint with replaced path placeholders and query parameters.
    */
   #prepareEndpoint(endpoint, params) {
-    let baseEndpoint = endpoint
+    let queryEndpoint = endpoint
     const queryParams = {}
 
     Object.entries(params).forEach(([key, value]) => {
       // Check and replace path placeholders
       const pathPlaceholder = `{${key}}`
-      if (baseEndpoint.includes(pathPlaceholder)) {
-        baseEndpoint = baseEndpoint.replace(pathPlaceholder, encodeURIComponent(value))
+      if (queryEndpoint.includes(pathPlaceholder)) {
+        queryEndpoint = queryEndpoint.replace(pathPlaceholder, encodeURIComponent(value))
       } else {
         queryParams[key] = value // Collect as query parameter
       }
     })
 
     // After replacing, check if any path placeholders are left unreplaced
-    const remainingPathPlaceholders = baseEndpoint.match(/\{([^}]+)\}/g)
+    const remainingPathPlaceholders = queryEndpoint.match(/\{([^}]+)\}/g)
     if (remainingPathPlaceholders) {
       throw new Error(`Missing values for parameters: ${remainingPathPlaceholders.join(", ")}`)
     }
 
-    return { baseEndpoint, queryParams }
+    return { queryEndpoint, queryParams }
   }
 
   /**
