@@ -122,7 +122,7 @@ export function createWebSocketClient(authentication, serviceConfig, market) {
     log.info(`WebSocket[${wsInfo.connection_id}] reconnected after ${(Date.now() - lastConnectedMts) / 1000} seconds (${retryNumber})`)
   })
 
-  webSocket.on('closed', ()=> {
+  webSocket.on('close', ()=> {
     log.notice(`WebSocket[${wsInfo.connection_id}] closed`)
     wsInfo = {}
   })
