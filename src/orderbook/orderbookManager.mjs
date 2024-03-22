@@ -168,7 +168,7 @@ export class OrderbookManager extends EventEmitter {
     if (checksum === this.#orderbook.checksum) {
       // Check if orderbook has been modified
       if (this.#minModifiedIndex !== undefined) {
-        this.emit('orderbook', this.#orderbook, {minModifiedIndex: this.#minModifiedIndex})
+        this.emit('orderbook', this.#orderbook, { minModifiedIndex: this.#minModifiedIndex })
       }
     } else {
       this.#log.info(`Error: Kraken orderbook checksum mismatch. Expected ${this.#orderbook.checksum}, calculated ${checksum}.`)

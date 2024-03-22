@@ -56,17 +56,20 @@ class OrderbookSubscriptionManager extends EventEmitter {
     }
   }
 
-  #onOrderbook = (data) => {
-     const orderbook = data === undefined
-      ? undefined
-      : {
-      asks: data.asks.slice(0, this.#depth),
-      bids: data.bids.slice(0, this.#depth),
-      symbol: data.symbol,
-      timestamp: data.timestamp,
-      }
+  #onOrderbook = (data, { minModifiedIndex }) => {
+    if (data === undefined) {
+      this.emit('orderbook', undefined)
+      return
+    }
 
-    this.emit('orderbook', orderbook)
+    if (minModifiedIndex < this.#depth) {
+      this.emit('orderbook', {
+        asks: data.asks.slice(0, this.#depth),
+        bids: data.bids.slice(0, this.#depth),
+        symbol: data.symbol,
+        timestamp: data.timestamp,
+      })
+    }
   }
 
   #validateSymbols(symbol) {
