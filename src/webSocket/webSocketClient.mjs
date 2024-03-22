@@ -9,12 +9,11 @@ const webSocketEndpoints = {
   private: 'wss://ws-auth.kraken.com/v2',
 }
 
-export function createWebSocketClient(authentication, serviceConfig, market) {
+export function createWebSocketClient(authentication, serviceConfig) {
   const log = serviceConfig.logger
   const isWebSocketPrivate = authentication !== undefined
   let webSocket
   let wsInfo = undefined
-  let wsEndpoint
   let isAvailable = false
   const messageSequenceValidator = createMessageSequenceValidator()
   let rest
@@ -103,7 +102,7 @@ export function createWebSocketClient(authentication, serviceConfig, market) {
   })
 
   webSocket.on('error', (error)=> {
-    log.notice(`WebSocket[${wsInfo.connection_id}] ${error.message}`)
+    log.notice(`WebSocket[${wsInfo?.connection_id || ''}] ${error.message}`)
   })
 
   webSocket.on('timeout', ()=> {

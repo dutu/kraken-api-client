@@ -1,6 +1,6 @@
 import { RestWrapper } from './rest/restWrapper.mjs'
 import { createWebSocketClient } from './webSocket/webSocketClient.mjs'
-import { createOrderbookSubscriptionManager } from './orderbook/subscriptionManager.mjs'
+import { createOrderbookSubscriptionManager } from './orderbook/orderbookSubscriptionManager.mjs'
 import { noop } from './utils/noop.mjs'
 
 /**
@@ -92,7 +92,7 @@ export class Kraken {
     this.ws = createWebSocketClient(authenticationToUse, serviceConfigToUse)
 
     // Add orderbook manager
-    this.orderbook = createOrderbookSubscriptionManager(authenticationToUse, serviceConfigToUse)
+    this.orderbook = createOrderbookSubscriptionManager(serviceConfigToUse)
   }
 }
 

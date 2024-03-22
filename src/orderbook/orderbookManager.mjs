@@ -1,21 +1,6 @@
 import EventEmitter from 'eventemitter3'
 import { createWebSocketClient } from '../webSocket/webSocketClient.mjs'
-import { createPolynomialBackoff } from '../utils/backoff.mjs'
-import { findIndexReverse } from '../utils/findIndexReverse.mjs'
-import { RestWrapper } from '../rest/restWrapper.mjs'
-
-const Fields = {
-  price: 0,
-  size: 1,
-  seq: 2,
-  side: 3,
-  time: 4,
-}
-
-const BaseTopic = {
-  spot: '/market/level2:',
-  futures: '/contractMarket/level2:',
-}
+import { calculateChecksum } from './calculateChecksum.mjs'
 
 /**
  * Manages and maintains a real-time order book for a given symbol and market (spot or futures) by
@@ -51,28 +36,21 @@ const BaseTopic = {
  */
 export class OrderbookManager extends EventEmitter {
   #symbol
-  #market
+  #depth
+  #instrument
   #log
   #webSocketClient
-  #isRequestSnapshotInProgress = false
-  #cacheSortedBySequence = []
   #orderbook = undefined
-  #backoff
-  #rest
   #isActive = true
+  #minModifiedIndex
 
-  constructor({ symbol, market }, credentialsToUse, serviceConfigToUse) {
+  constructor({ symbol, depth = 1000 }, serviceConfig) {
     super()
     this.#symbol = symbol
-    this.#market = market
-    this.#log = serviceConfigToUse.logger
-
-    this.#backoff = createPolynomialBackoff({ minValue: 50, maxValue: 10000, degree: 3 })
-
-    this.#rest = new RestWrapper(credentialsToUse, serviceConfigToUse)
-    this.#webSocketClient = createWebSocketClient(credentialsToUse, serviceConfigToUse, market)
+    this.#depth = depth
+    this.#log = serviceConfig.logger
+    this.#webSocketClient = createWebSocketClient(undefined, serviceConfig)
     this.#setupWebSocketClient()
-
     this.#webSocketClient.connect()
   }
 
@@ -86,88 +64,119 @@ export class OrderbookManager extends EventEmitter {
   destroy() {
     this.#isActive = false
     this.emit('orderbook', undefined)
-
-    const subscription = {
-      type: 'unsubscribe',
-      topic: BaseTopic[this.#market] + this.#symbol,
-      response: true,
-    }
-
-    this.#webSocketClient.unsubscribe(subscription, this.#applyWebSocketUpdate)
+    this.#webSocketClient.book
+      .unsubscribe({
+        symbol: [this.#symbol],
+        depth: this.#depth,
+      })
+    this.#webSocketClient.instrument
+      .unsubscribe({
+        symbol: [this.#symbol],
+      })
     this.#webSocketClient.close()
     this.#webSocketClient = null
-    this.#cacheSortedBySequence = []
     this.#orderbook = undefined
   }
 
   /*
    * Initiate a WebSocket client to receive orderbook updates
    */
-  #setupWebSocketClient() {
-    const subscription = {
-      type: 'subscribe',
-      topic: BaseTopic[this.#market] + this.#symbol,
-      response: true,
-    }
-
-    this.#webSocketClient.subscribe(subscription, this.#applyWebSocketUpdate)
-
+  async #setupWebSocketClient() {
     this.#webSocketClient.on('open', () => {
-      this.#requestSnapshot()
+      this.#log.debug(`Kraken orderbook WebSocket open.`)
+      this.#instrument = undefined
+      this.#orderbook = undefined
+    })
+
+    this.#webSocketClient.on('error', (data) => {
+      this.#log.debug(`Kraken orderbook WebSocket error:\n ${JSON.stringify(data, null, 2)}`)
     })
 
     this.#webSocketClient.on('close', () => {
+      this.#log.debug(`Kraken orderbook WebSocket closed.`)
       this.#orderbook = undefined
       this.emit('orderbook', undefined)
-      this.#log.notice(`Orderbook ${this.#symbol} not available`)
     })
+
+    this.#webSocketClient.instrument
+      .on('subscribe', (data) => {})
+      .on('unsubscribe', (data) => {})
+      .on('snapshot', (data) => this.#updateInstrument(data))
+      .on('update', (data) => this.#updateInstrument(data))
+      .subscribe({
+        snapshot: true,
+        symbol: [this.#symbol],
+      })
+
+    this.#webSocketClient.book
+      .on('subscribe', (data) => {})
+      .on('unsubscribe', (data) => {})
+      .on('snapshot', (data) => this.#onOrderbookSnapshot(data))
+      .on('update', (data) => this.#onOrderbookUpdate(data))
+      .subscribe({
+        snapshot: true,
+        symbol: [this.#symbol],
+        depth: this.#depth,
+      })
   }
 
-  async #requestSnapshot() {
-    if (this.#isRequestSnapshotInProgress) return
-    this.#isRequestSnapshotInProgress = true
-    this.#orderbook = undefined
-    this.emit('orderbook', undefined)
-    while (this.#isActive) {
-      try {
-        const result = await this.#rest.getFullOrderBook({ symbol: this.#symbol })
-        this.#orderbook = result.data
-        // Check if we hava overlap between orderbook snapshot and cached updates
-        if (this.#cacheSortedBySequence[0] && Number(this.#cacheSortedBySequence[0][Fields.seq]) < Number(this.#orderbook.sequence)) {
-          // if overlap we stop trying to get new snapshots
-          break
-        }
-      } catch (e) {
-        this.#log.notice(e.message)
-      }
+  #updateInstrument(data) {
+    if ((data.type === 'snapshot' || data.type === 'update') && Array.isArray(data.data?.pairs)) {
+      const instrumentFirstTimeUpdate = this.#instrument === undefined
+      this.#instrument = data.data.pairs.find((instrument) => instrument.symbol === this.#symbol)
 
-      await this.#backoff.delay()
+      // Check if we update instrument data first time after the WebSocket is open
+      if (instrumentFirstTimeUpdate) {
+        // If yes, we need to mark the entire orderbook as new
+        this.#minModifiedIndex = 0
+        this.#verifyChecksumAndEmitOrderbook()
+      }
+    }
+  }
+
+  async #onOrderbookSnapshot(data) {
+    this.#orderbook = data.data[0]
+    this.#orderbook.timestamp = new Date().toISOString()
+    this.#minModifiedIndex = 0
+    this.#verifyChecksumAndEmitOrderbook()
+  }
+
+  async #onOrderbookUpdate(data) {
+    if (!this.#orderbook || !this.#isActive) {
+      return
     }
 
-    if (this.#isActive) {
-      this.#isRequestSnapshotInProgress = false
-      this.#backoff.reset()
-      const res = this.#applyChangesFromCacheAndEmitOrderbook()
-      if (res) {
-        this.#log.info(`Orderbook ${this.#symbol} available and synchronized at sequence ${res.synchronizedAtSequence}`)
+    this.#applyUpdates(data)
+    this.#verifyChecksumAndEmitOrderbook()
+  }
+
+  #verifyChecksumAndEmitOrderbook() {
+    // Check if we have received instrument data, the orderbook, and the orderbook manager is active
+    if (!(this.#instrument && this.#orderbook && this.#isActive)) {
+      // If not, we cannot calculate the checksum. We will not emit the orderbook
+      return
+    }
+
+    let checksum = calculateChecksum({
+      asks : this.#orderbook.asks,
+      bids: this.#orderbook.bids,
+      pricePrecision: this.#instrument.price_precision,
+      qtyPrecision: this.#instrument.qty_precision,
+    })
+
+    // Check if we have a valid checksum
+    if (checksum === this.#orderbook.checksum) {
+      // Check if orderbook has been modified
+      if (this.#minModifiedIndex !== undefined) {
+        this.emit('orderbook', this.#orderbook, {minModifiedIndex: this.#minModifiedIndex})
       }
+    } else {
+      this.#log.info(`Error: Kraken orderbook checksum mismatch. Expected ${this.#orderbook.checksum}, calculated ${checksum}.`)
+      this.#minModifiedIndex = 0
+      this.#orderbook = undefined
+      this.#webSocketClient.refresh()
     }
   }
-
-  /*
-   * Adds a 'change' object to the cache array, which is sorted by the sequence number in ascending order.
-   */
-  #addChangeToCache(change) {
-    const cache = this.#cacheSortedBySequence
-    const sequence = Number(change[Fields.seq])
-
-    // Find the position from the end where the change's sequence is just larger than the next item's sequence
-    let positionToInsert = findIndexReverse(cache,(item) => Number(item[Fields.seq]) < sequence)
-
-    // Add the change to the cache at the calculated position (increment position to insert after it)
-    cache.splice(positionToInsert + 1, 0, change)
-  }
-
 
   /*
    * Applies a change to the order book.
@@ -175,123 +184,77 @@ export class OrderbookManager extends EventEmitter {
    * Orders are kept sorted by price. A size of '0' indicates that the order should be removed.
    *
    * Params:
-   * - change: Object containing [price, size, seq, side]
+   * - change: Object containing { side, price, qty }
    * Returns:
    * - index: The index position where the applied into the orderbook asks or bids, or undefined if there was no change
    */
-  #applyChange(change) {
-    const side = change[Fields.side]
+  #applyChange({ side, price, qty }) {
     const obSide = this.#orderbook[side]
-    const price = Number(change[Fields.price])
-    const size = change[Fields.size]
-    const sequence = change[Fields.seq]
     let index
 
     if (!this.#orderbook[side]) {
       this.#orderbook[side] = []
     }
 
-    // Check if the price is 0
-    if (price === 0) {
-      // Ignore the messages and update the sequence
-      this.#orderbook.sequence = sequence
-      this.#orderbook.time = change[Fields.time]
-      return undefined
-    }
-
     // Find the index where price is less than (for bids) or greater than (for asks) the current price
     // or where the price is exactly equal to handle the update or delete
     index = obSide.findIndex((entry) => {
-      return side === 'asks' ? Number(entry[Fields.price]) >= price : Number(entry[Fields.price]) <= price
+      return side === 'asks' ? entry.price >= price : entry.price <= price
     })
 
     if (index !== -1) {
       // If the found price is equal, update or delete
-      if (Number(obSide[index][Fields.price]) === price) {
-        if (Number(size) === 0) {
+      if (obSide[index].price === price) {
+        if (qty === 0) {
           // Size 0 indicates deletion
           obSide.splice(index, 1)
         } else {
           // Update size
-          obSide[index][Fields.size] = size
+          obSide[index].qty = qty
         }
       } else {
         // Price not equal, implies new entry. Insert before the found index for asks, after for bids
-        const newEntry = [change[Fields.price], size]
+        const newEntry = { price, qty }
         obSide.splice(index, 0, newEntry)
       }
     } else {
       // No entry found, or should be added to the end
-      const newEntry = [change[Fields.price], size]
+      const newEntry = { price, qty }
       obSide.push(newEntry)
       index = obSide.length - 1
     }
 
-    this.#orderbook.sequence = sequence
-    this.#orderbook.time = change[Fields.time]
     return index
   }
 
-  #applyChangesFromCacheAndEmitOrderbook() {
-    if (!this.#orderbook || !this.#isActive) {
-      return
-    }
+  /*
+   * Applies updates from WebSocket update message to the order book.
+   */
+  #applyUpdates(data) {
+    this.#minModifiedIndex = undefined
+    for (const side of ['asks', 'bids']) {
+      const obSide = data.data?.[0]?.[side]
+      // Verify that 'asks' or 'bids' are arrays
+      if (!Array.isArray(obSide)) {
+        // If not, the orderbook update message is invalid
+        this.#log.debug(`Error: Kraken orderbook update message is invalid:\n${JSON.stringify(data, null, 2)}`)
+        this.#webSocketClient.refresh()
+      }
 
-    let synchronizedAtSequence
-    let minModifiedIndex
-    for (const change of this.#cacheSortedBySequence) {
-      // Check if outdated change
-      if (Number(change[Fields.seq]) > Number(this.#orderbook.sequence)) {
-        // Only apply not-outdated change
-        synchronizedAtSequence ??= change[Fields.seq]
-        const modifiedIndex = this.#applyChange(change)
+      for(const change of obSide) {
+        const modifiedIndex = this.#applyChange({...change, side })
 
         // Update minModifiedIndex only if modifiedIndex is defined and either minModifiedIndex is undefined or modifiedIndex is smaller
-        if (modifiedIndex !== undefined && (minModifiedIndex === undefined || modifiedIndex < minModifiedIndex)) {
-          minModifiedIndex = modifiedIndex
+        if (modifiedIndex !== undefined && (this.#minModifiedIndex === undefined || modifiedIndex < this.#minModifiedIndex)) {
+          this.#minModifiedIndex = modifiedIndex
         }
       }
+
+      // Truncates the array to contain no more than `this.#depth` elements
+      this.#orderbook[side].length = Math.min(this.#depth, this.#orderbook[side].length)
     }
 
-    // Empty cache after processing
-    this.#cacheSortedBySequence = []
-
-    if (minModifiedIndex !== undefined) {
-      this.emit('orderbook', this.#orderbook, { minModifiedIndex })
-    }
-
-    return synchronizedAtSequence ? { synchronizedAtSequence } : undefined
-  }
-
-  /*
-   * Applies changes from an WebSocket update message to the order book.
-   * (Use arrow function, so we can always run it in "this" context
-   */
-  #applyWebSocketUpdate = (update) => {
-    if (!this.#isActive) {
-      return
-    }
-
-    if (update.type === 'ack') {
-      this.#log.info(`WebSocket[${this.#webSocketClient.connectId}] subscribed to orderbook:${this.#symbol}`)
-      return
-    }
-
-    if (update.subject !== 'trade.l2update') {
-      // Filter out irrelevant messages
-      return
-    }
-
-    // Add updates to cache
-    for (const side of ['asks', 'bids']) {
-      for (const change of update.data.changes[side]) {
-        this.#addChangeToCache([...change, side, update.data.time])
-      }
-    }
-
-    // Check if we have a valid orderbook
-    if (this.#orderbook) {
-      this.#applyChangesFromCacheAndEmitOrderbook()
-    }
+    this.#orderbook.checksum = data.data[0].checksum
+    this.#orderbook.timestamp = data.data[0].timestamp
   }
 }

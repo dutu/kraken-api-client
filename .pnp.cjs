@@ -27,6 +27,7 @@ const RAW_RUNTIME_STATE =
         "packageLocation": "./",\
         "packageDependencies": [\
           ["axios", "npm:1.6.8"],\
+          ["crc-32", "npm:1.2.2"],\
           ["eventemitter3", "npm:5.0.1"],\
           ["forever-websocket", "npm:0.4.1"],\
           ["isomorphic-ws", "virtual:86008d4043b73bb56849cac2beac9370e113e5f559c07d09a261c81d61cb8c95a8a5315c3beaa0a9b721919bffca0552fecd748bbe1c1cf3f08e415b5a0262d6#npm:5.0.0"],\
@@ -63,6 +64,15 @@ const RAW_RUNTIME_STATE =
         "packageDependencies": [\
           ["combined-stream", "npm:1.0.8"],\
           ["delayed-stream", "npm:1.0.0"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
+    ["crc-32", [\
+      ["npm:1.2.2", {\
+        "packageLocation": "../../AppData/Local/Yarn/Berry/cache/crc-32-npm-1.2.2-28bdc12bcc-10c0.zip/node_modules/crc-32/",\
+        "packageDependencies": [\
+          ["crc-32", "npm:1.2.2"]\
         ],\
         "linkType": "HARD"\
       }]\
@@ -158,6 +168,7 @@ const RAW_RUNTIME_STATE =
         "packageDependencies": [\
           ["kraken-api-client", "workspace:."],\
           ["axios", "npm:1.6.8"],\
+          ["crc-32", "npm:1.2.2"],\
           ["eventemitter3", "npm:5.0.1"],\
           ["forever-websocket", "npm:0.4.1"],\
           ["isomorphic-ws", "virtual:86008d4043b73bb56849cac2beac9370e113e5f559c07d09a261c81d61cb8c95a8a5315c3beaa0a9b721919bffca0552fecd748bbe1c1cf3f08e415b5a0262d6#npm:5.0.0"],\
