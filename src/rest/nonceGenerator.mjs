@@ -13,7 +13,7 @@ export const createNonceGenerator = function createNonceGenerator() {
   let counter = 0
 
   const generateNonce = function generateNonce() {
-    const currentNonce = Date.now() * 1000
+    const currentNonce = Date.now()
     if (currentNonce <= lastNonce) {
       counter += 1
       lastNonce += counter
