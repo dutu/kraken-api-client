@@ -110,7 +110,7 @@ export function createWebSocketClient(authentication, serviceConfig) {
   })
 
   webSocket.on('delay', (retryNumber, delay)=> {
-    log.info(`WebSocket[${wsInfo.connection_id}] will try reconnecting in ${delay / 1000} seconds`)
+    log.info(`WebSocket[${wsInfo?.connection_id || ''}] will try reconnecting in ${delay / 1000} seconds`)
   })
 
   webSocket.on('connecting', (retryNumber, delay)=> {

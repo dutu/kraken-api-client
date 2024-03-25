@@ -11,8 +11,8 @@ import { noop } from './utils/noop.mjs'
  * @typedef {Object} Authentication
  * @property {string} [apiKey] - The API key.
  * @property {string} [apiSecret] - The API secret.
- * @property {function} [nonce] - Function for generating a valid nonce.
- * @property {function} [otp] - Function for generating  one time password.
+ * @property {function} [generateNonce] - Function for generating a valid nonce.
+ * @property {function} [generateOtp] - Function for generating  one time password.
  */
 
 /**

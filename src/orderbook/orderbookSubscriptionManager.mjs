@@ -56,7 +56,7 @@ class OrderbookSubscriptionManager extends EventEmitter {
     }
   }
 
-  #onOrderbook = (data, { minModifiedIndex }) => {
+  #onOrderbook = (data, { minModifiedIndex } = {}) => {
     if (data === undefined) {
       this.emit('orderbook', undefined)
       return

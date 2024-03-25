@@ -1,6 +1,7 @@
 import crypto from 'crypto'
 import axios from 'axios'
 import { toQueryString } from '../utils/toQueryString.mjs'
+import { createNonceGenerator } from './nonceGenerator.mjs'
 
 /**
  * Creates authentication signature.
@@ -38,8 +39,8 @@ export class BaseWrapper {
     production: `https://api.kraken.com`,
   }
 
-  constructor({ apiKey, apiSecret, nonce, otp } = {}, { logger }) {
-    this.#authentication = { apiKey, apiSecret, nonce, otp }
+  constructor({ apiKey, apiSecret, generateNonce = createNonceGenerator(), generateOtp } = {}, { logger }) {
+    this.#authentication = { apiKey, apiSecret, generateNonce, generateOtp }
     this.#log = logger
     this.#client = axios.create()
   }
@@ -89,10 +90,11 @@ export class BaseWrapper {
     }
 
     if(requiresAuth) {
-      queryParams.nonce = this.#authentication.nonce || new Date() * 1000; // spoof microsecond
+      queryParams.nonce = this.#authentication.generateNonce()
+      console.log(queryParams.nonce)
 
-      if (this.#authentication.otp) {
-        queryParams.otp = this.#authentication.otp
+      if (this.#authentication.generateOtp) {
+        queryParams.otp = this.#authentication.generateOtp()
       }
     }
 
@@ -107,7 +109,6 @@ export class BaseWrapper {
     }
 
     if (requiresAuth) {
-      const timestamp = Date.now().toString()
       const sign = createAuthenticationSignature(
         queryEndpoint,
         data,
@@ -123,7 +124,7 @@ export class BaseWrapper {
     try {
       response = await axios(axiosConfig)
       if (Array.isArray(response.data?.error) && response.data.error.length > 0) {
-        throw new Error(error.join(', '))
+        throw new Error(response.data.error.join(', '))
       }
     } catch (error) {
       throw new Error(error.response ? `${error.response.status}: ${error.response.statusText}` : error.message)
@@ -161,39 +162,5 @@ export class BaseWrapper {
     }
 
     return { queryEndpoint, queryParams }
-  }
-
-  /**
-   * Signs a message using HMAC-SHA256 with the API secret and encodes it in base64.
-   *
-   * @param {string} message - The message to be signed.
-   * @returns {string} The base64-encoded signature.
-   */
-  #signMessage(message) {
-    return crypto.createHmac('sha256', this.#authentication.apiSecret)
-      .update(message)
-      .digest('base64')
-  }
-
-  /**
-   * Generates authentication headers for Kucoin API requests.
-   *
-   * @param {string} endpoint - The API endpoint.
-   * @param {string} method - The HTTP method (GET, POST, etc.).
-   * @param {string} [body=""] - The request body for POST requests.
-   * @returns {Object} The required headers for authenticated API requests.
-   */
-  #getAuthHeaders(path, request, nonce) {
-    const message       = qs.stringify(request)
-    const secret_buffer = new Buffer(this.#authentication.apiKey, 'base64')
-    const hash          = new crypto.createHash('sha256')
-    const hmac          = new crypto.createHmac('sha512', secret_buffer)
-    const hash_digest   = hash.update(nonce + message).digest('binary')
-    const hmac_digest   = hmac.update(path + hash_digest, 'binary').digest('base64')
-
-    return {
-      'API-Key': this.#authentication.apiKey,
-      'API-Sign': signature,
-    }
   }
 }
