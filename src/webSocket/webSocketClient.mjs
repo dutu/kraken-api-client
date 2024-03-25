@@ -106,7 +106,7 @@ export function createWebSocketClient(authentication, serviceConfig) {
   })
 
   webSocket.on('timeout', ()=> {
-    log.notice(`WebSocket[${wsInfo.connection_id}] timed out`)
+    log.notice(`WebSocket[${wsInfo?.connection_id || ''}] timed out`)
   })
 
   webSocket.on('delay', (retryNumber, delay)=> {
@@ -114,15 +114,15 @@ export function createWebSocketClient(authentication, serviceConfig) {
   })
 
   webSocket.on('connecting', (retryNumber, delay)=> {
-    log.info(`WebSocket[${wsInfo.connection_id}] connecting... (${retryNumber})`)
+    log.info(`WebSocket[${wsInfo?.connection_id || ''}] connecting... (${retryNumber})`)
   })
 
   webSocket.on('reconnected', (retryNumber, lastConnectedMts)=> {
-    log.info(`WebSocket[${wsInfo.connection_id}] reconnected after ${(Date.now() - lastConnectedMts) / 1000} seconds (${retryNumber})`)
+    log.info(`WebSocket[${wsInfo?.connection_id || ''}] reconnected after ${(Date.now() - lastConnectedMts) / 1000} seconds (${retryNumber})`)
   })
 
   webSocket.on('close', ()=> {
-    log.notice(`WebSocket[${wsInfo.connection_id}] closed`)
+    log.notice(`WebSocket[${wsInfo?.connection_id || ''}] closed`)
     wsInfo = {}
   })
 
