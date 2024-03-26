@@ -122,7 +122,12 @@ export class ChannelManager extends EventEmitter {
   sendSubscribe(subscription) {
     // Check if WebSocket connection is ready
     if (this.#webSocket.readyState === 1) {
-      this.#webSocket.send({ ...subscription, req_id: uniqueId() })
+      const subscriptionToSend = { ...subscription, req_id: uniqueId() }
+      if (privateSubscriptionChannels.has(this.#channel)) {
+        subscriptionToSend.params.token = this.#webSocket.info.token
+      }
+
+      this.#webSocket.send(subscriptionToSend)
     }
   }
 

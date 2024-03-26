@@ -1,6 +1,5 @@
 import WebSocket from 'isomorphic-ws'
 import { ForeverWebSocket } from 'forever-websocket'
-import { createMessageSequenceValidator } from './messageSequenceValidator.mjs'
 import { ChannelManager, channels, privateSubscriptionChannels, publicSubscriptionChannels } from './channelManager.mjs'
 import { RestWrapper } from '../rest/restWrapper.mjs'
 
@@ -13,9 +12,8 @@ export function createWebSocketClient(authentication, serviceConfig) {
   const log = serviceConfig.logger
   const isWebSocketPrivate = authentication !== undefined
   let webSocket
-  let wsInfo = undefined
+  let wsInfo = isWebSocketPrivate ? { endPoint: webSocketEndpoints.private } : { endPoint: webSocketEndpoints.public }
   let isAvailable = false
-  const messageSequenceValidator = createMessageSequenceValidator()
   let rest
 
   if (isWebSocketPrivate) {
@@ -26,15 +24,7 @@ export function createWebSocketClient(authentication, serviceConfig) {
     if (isWebSocketPrivate) {
       // Websocket is private
       const { result: tokenInfo } = await rest.getWebsocketsToken()
-      wsInfo = {
-        endPoint: webSocketEndpoints.private,
-        token: tokenInfo.token
-      }
-    } else {
-      // Websocket is public
-      wsInfo = {
-        endPoint: webSocketEndpoints.public,
-      }
+      wsInfo.token = tokenInfo.token
     }
 
     return new WebSocket(wsInfo.endPoint)
@@ -82,7 +72,6 @@ export function createWebSocketClient(authentication, serviceConfig) {
 
   webSocket.on('open', ()=> {
     log.debug(`WebSocket connected to ${wsInfo.endpoint}`)
-    messageSequenceValidator.reset()
     resentSubscribe()
   })
 
