@@ -91,8 +91,6 @@ export class BaseWrapper {
 
     if(requiresAuth) {
       queryParams.nonce = this.#authentication.generateNonce()
-      console.log(queryParams.nonce)
-
       if (this.#authentication.generateOtp) {
         queryParams.otp = this.#authentication.generateOtp()
       }
