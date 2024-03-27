@@ -1,18 +1,18 @@
 {
-  "name": "kraken-newapi-client",
-  "version": "0.1.0",
+  "name": "kraken-api-client",
+  "version": "0.1.1",
   "description": "Kraken API client for REST and WebSocket API",
   "type": "module",
   "author": "dutu <dutu.protonmail.com>",
   "exports": "./src/index.mjs",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dutu/kraken-newapi-client.git"
+    "url": "git+https://github.com/dutu/kraken-api-client.git"
   },
   "bugs": {
-    "url": "https://github.com/dutu/kraken-newapi-client/issues"
+    "url": "https://github.com/dutu/kraken-api-client/issues"
   },
-  "homepage": "https://github.com/dutu/kraken-newapi-client#readme",
+  "homepage": "https://github.com/dutu/kraken-api-client#readme",
   "keywords": [
     "Kraken",
     "API",
@@ -27,7 +27,8 @@
   "license": "MIT",
   "packageManager": "yarn@4.1.1",
   "dependencies": {
-    "axios": "^1.6.7",
+    "axios": "^1.6.8",
+    "crc-32": "^1.2.2",
     "eventemitter3": "^5.0.1",
     "forever-websocket": "^0.4.1",
     "isomorphic-ws": "^5.0.0",

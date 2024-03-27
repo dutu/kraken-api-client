@@ -1,7 +1,6 @@
 import EventEmitter from 'eventemitter3'
 import { uniqueId } from '../utils/uniqueId.mjs'
 
-
 export const channels = {
   book: 'book',
   executions: 'executions',
@@ -29,6 +28,7 @@ export class ChannelManager extends EventEmitter {
 
   subscribe(params) {
     const { token,  symbol: symbolArray = [], ...subscriptionObject} = params
+    this.#validateSymbol(symbolArray)
     const subscriptionKey = JSON.stringify(subscriptionObject)
 
     if (this.#subscriptionKeys === undefined) {
@@ -54,6 +54,41 @@ export class ChannelManager extends EventEmitter {
     this.sendSubscribe(subscription)
     return this
   }
+
+  unsubscribe(params) {
+    const { token,  symbol: symbolArray = [], ...subscriptionObject} = params
+
+    Object.keys(this.#subscriptionKeys).forEach((subscriptionKey) => {
+      // Compare unsubscribe object with registered subscriptions, but without the snapshot key
+      const registeredKey = JSON.parse(subscriptionKey)
+      delete registeredKey.snapshot
+      const unsubscribeKey = { ...subscriptionObject }
+      delete unsubscribeKey.snapshot
+      if (JSON.stringify(registeredKey) === JSON.stringify(unsubscribeKey)) {
+        // Remove symbols from the subscription
+        symbolArray.forEach(symbol => {
+          this.#subscriptionKeys[subscriptionKey].delete(symbol)
+        })
+
+        // Check if there is no more symbols in the subscription
+        if (this.#subscriptionKeys[subscriptionKey].size === 0) {
+          delete this.#subscriptionKeys[subscriptionKey]
+        }
+      }
+    })
+
+    const subscription = {
+      method: 'unsubscribe',
+      params: {
+        ...params,
+        channel: this.#channel,
+      },
+    }
+
+    this.sendSubscribe(subscription)
+    return this
+  }
+
 
   // Send subscribe WebSocket commands to resubscribe to all subscriptions
   sendSubscribeToResubscribe() {
@@ -87,7 +122,12 @@ export class ChannelManager extends EventEmitter {
   sendSubscribe(subscription) {
     // Check if WebSocket connection is ready
     if (this.#webSocket.readyState === 1) {
-      this.#webSocket.send({ ...subscription, req_id: uniqueId() })
+      const subscriptionToSend = { ...subscription, req_id: uniqueId() }
+      if (privateSubscriptionChannels.has(this.#channel)) {
+        subscriptionToSend.params.token = this.#webSocket.info.token
+      }
+
+      this.#webSocket.send(subscriptionToSend)
     }
   }
 
@@ -96,16 +136,22 @@ export class ChannelManager extends EventEmitter {
   }
 
   #onUnsubscribe = (data) => {
-    this.emit('unsubscribe', data)
     this.#webSocket.off('subscribe', this.#onSubscribe)
     this.#webSocket.off('unsubscribe', this.#onUnsubscribe)
     this.#webSocket.off('message', this.#onMessage)
+    this.emit('unsubscribe', data)
   }
 
   #onMessage = (message) => {
     const data = JSON.parse(message)
     if (data.channel === this.#channel) {
       this.emit(data.type, data)
+    }
+  }
+
+  #validateSymbol(symbol) {
+    if (!Array.isArray(symbol)) {
+      throw new Error(`Invalid symbol "${symbol}"`)
     }
   }
 }

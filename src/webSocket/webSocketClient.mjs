@@ -1,6 +1,5 @@
 import WebSocket from 'isomorphic-ws'
 import { ForeverWebSocket } from 'forever-websocket'
-import { createMessageSequenceValidator } from './messageSequenceValidator.mjs'
 import { ChannelManager, channels, privateSubscriptionChannels, publicSubscriptionChannels } from './channelManager.mjs'
 import { RestWrapper } from '../rest/restWrapper.mjs'
 
@@ -9,15 +8,12 @@ const webSocketEndpoints = {
   private: 'wss://ws-auth.kraken.com/v2',
 }
 
-export function createWebSocketClient(authentication, serviceConfig, market) {
+export function createWebSocketClient(authentication, serviceConfig) {
   const log = serviceConfig.logger
   const isWebSocketPrivate = authentication !== undefined
-  const isConnectionInitialized = false
   let webSocket
-  let wsInfo = undefined
-  let wsEndpoint
+  let wsInfo = isWebSocketPrivate ? { endPoint: webSocketEndpoints.private } : { endPoint: webSocketEndpoints.public }
   let isAvailable = false
-  const messageSequenceValidator = createMessageSequenceValidator()
   let rest
 
   if (isWebSocketPrivate) {
@@ -25,20 +21,13 @@ export function createWebSocketClient(authentication, serviceConfig, market) {
   }
 
   const createWebSocket = async () => {
-    let wsUrl
     if (isWebSocketPrivate) {
       // Websocket is private
-      wsEndpoint = webSocketEndpoints.private
-      const connectInfo = await rest.getWebsocketsToken()
-      const instanceServer = connectInfo.data.instanceServers[0]
-      return new WebSocket(wsUrl)
-    } else {
-      // Websocket is public
-      wsEndpoint = webSocketEndpoints.public
-      wsUrl = wsEndpoint
+      const { result: tokenInfo } = await rest.getWebsocketsToken()
+      wsInfo.token = tokenInfo.token
     }
 
-    return new WebSocket(wsUrl)
+    return new WebSocket(wsInfo.endPoint)
   }
 
   const resentSubscribe = () => {
@@ -82,8 +71,7 @@ export function createWebSocketClient(authentication, serviceConfig, market) {
   webSocket.trade = new ChannelManager({ channel: 'trade', webSocket })
 
   webSocket.on('open', ()=> {
-    log.debug(`WebSocket connected to ${wsEndpoint}`)
-    messageSequenceValidator.reset()
+    log.debug(`WebSocket connected to ${wsInfo.endpoint}`)
     resentSubscribe()
   })
 
@@ -92,7 +80,8 @@ export function createWebSocketClient(authentication, serviceConfig, market) {
 
     if (['status', 'heartbeat'].includes(data.channel) || ['pong', 'subscribe', 'unsubscribe'].includes(data.method)) {
       if (data.channel === 'status') {
-        wsInfo = data.data[0]
+        let status = data.data[0]
+        wsInfo = { ...wsInfo, ...status }
       }
 
       const event = data.channel || data.method
@@ -102,27 +91,27 @@ export function createWebSocketClient(authentication, serviceConfig, market) {
   })
 
   webSocket.on('error', (error)=> {
-    log.notice(`WebSocket[${wsInfo.connectId}] ${error.message}`)
+    log.notice(`WebSocket[${wsInfo?.connection_id || ''}] ${error.message}`)
   })
 
   webSocket.on('timeout', ()=> {
-    log.notice(`WebSocket[${wsInfo.connectId}] timed out after ${wsInfo.timeout / 1000} seconds`)
+    log.notice(`WebSocket[${wsInfo?.connection_id || ''}] timed out`)
   })
 
   webSocket.on('delay', (retryNumber, delay)=> {
-    log.info(`WebSocket[${wsInfo.connectId}] will try reconnecting in ${delay / 1000} seconds`)
+    log.info(`WebSocket[${wsInfo?.connection_id || ''}] will try reconnecting in ${delay / 1000} seconds`)
   })
 
   webSocket.on('connecting', (retryNumber, delay)=> {
-    log.info(`WebSocket[${wsInfo.connectId}] connecting... (${retryNumber})`)
+    log.info(`WebSocket[${wsInfo?.connection_id || ''}] connecting... (${retryNumber})`)
   })
 
   webSocket.on('reconnected', (retryNumber, lastConnectedMts)=> {
-    log.info(`WebSocket[${wsInfo.connectId}] reconnected after ${(Date.now() - lastConnectedMts) / 1000} seconds (${retryNumber})`)
+    log.info(`WebSocket[${wsInfo?.connection_id || ''}] reconnected after ${(Date.now() - lastConnectedMts) / 1000} seconds (${retryNumber})`)
   })
 
-  webSocket.on('closed', ()=> {
-    log.notice(`WebSocket[${wsInfo.connectId}] closed`)
+  webSocket.on('close', ()=> {
+    log.notice(`WebSocket[${wsInfo?.connection_id || ''}] closed`)
     wsInfo = {}
   })
 

@@ -1,6 +1,35 @@
 import crypto from 'crypto'
 import axios from 'axios'
 import { toQueryString } from '../utils/toQueryString.mjs'
+import { createNonceGenerator } from './nonceGenerator.mjs'
+
+/**
+ * Creates authentication signature.
+ *
+ * @param {string} path - The request path.
+ * @param {string} message - The message to be authenticated.
+ * @param {string} secret - The secret key, base64 encoded.
+ * @param {string} nonce - A unique value for the request.
+ * @returns {string} - The HMAC digest as a base64 encoded string.
+ *
+ * @example
+ * const path = '/api/v1/orders';
+ * const message = '{"order_id": 123456}';
+ * const secret = 'MjVkMjQyZDEwZjE2ZDhlMmJhZTI='; // Example base64 encoded secret
+ * const nonce = '1588394368';
+ * const signature = createAuthenticationSignature(path, message, secret, nonce);
+ * console.log(signature); // Logs the HMAC digest in base64 format.
+ */
+const createAuthenticationSignature = function createAuthenticationSignature(path, message, secret, nonce)  {
+  const secretBuffer = Buffer.from(secret, 'base64')
+  const hashDigest = crypto.createHash('sha256')
+    .update(nonce + message)
+    .digest('binary')
+  const hmacDigest = crypto.createHmac('sha512', secretBuffer)
+    .update(path + hashDigest, 'binary')
+    .digest('base64')
+  return hmacDigest
+}
 
 export class BaseWrapper {
   #authentication
@@ -10,8 +39,8 @@ export class BaseWrapper {
     production: `https://api.kraken.com`,
   }
 
-  constructor({ apiKey, apiSecret, nonce, otp } = {}, { logger }) {
-    this.#authentication = { apiKey, apiSecret, nonce, otp }
+  constructor({ apiKey, apiSecret, generateNonce = createNonceGenerator(), generateOtp } = {}, { logger }) {
+    this.#authentication = { apiKey, apiSecret, generateNonce, generateOtp }
     this.#log = logger
     this.#client = axios.create()
   }
@@ -51,13 +80,20 @@ export class BaseWrapper {
       throw new Error('Authentication is required, but no API key was provided.')
     }
 
-    const { baseEndpoint, queryParams } = this.#prepareEndpoint(endpoint, params)
+    const { queryEndpoint, queryParams } = this.#prepareEndpoint(endpoint, params)
 
     const axiosConfig = {
       method,
-      url: `${this.#baseURLs[baseUrl]}${baseEndpoint}`,
+      url: `${this.#baseURLs[baseUrl]}${queryEndpoint}`,
       headers: {},
       timeout: 5000,
+    }
+
+    if(requiresAuth) {
+      queryParams.nonce = this.#authentication.generateNonce()
+      if (this.#authentication.generateOtp) {
+        queryParams.otp = this.#authentication.generateOtp()
+      }
     }
 
     // Include params as 'params' for GET and DELETE, 'data' for others
@@ -71,26 +107,22 @@ export class BaseWrapper {
     }
 
     if (requiresAuth) {
-      const timestamp = Date.now().toString()
-      const strToSign = `${timestamp}${method}${baseEndpoint}${data}`
-      const sign = crypto.createHmac('sha256', this.#authentication.apiSecret).update(strToSign).digest('base64')
+      const sign = createAuthenticationSignature(
+        queryEndpoint,
+        data,
+        this.#authentication.apiSecret,
+        queryParams.nonce
+      )
 
-      axiosConfig.headers['KC-API-KEY'] = this.#authentication.apiKey
-      axiosConfig.headers['KC-API-SIGN'] = sign
-      axiosConfig.headers['KC-API-TIMESTAMP'] = timestamp
-      axiosConfig.headers['Content-Type'] = 'application/json'
-
-      if (this.#authentication.apiKeyVersion.toString() === '2') {
-        axiosConfig.headers['KC-API-PASSPHRASE'] = crypto.createHmac('sha256', this.#authentication.apiSecret).update(this.#authentication.apiPassphrase).digest('base64')
-        axiosConfig.headers['KC-API-KEY-VERSION'] = 2
-      }
+      axiosConfig.headers['API-Key'] = this.#authentication.apiKey
+      axiosConfig.headers['API-Sign'] = sign
     }
 
     let response
     try {
       response = await axios(axiosConfig)
-      if (!(response.status === 200 && response.data?.code === '200000')) {
-        throw new Error(`${response.data?.code || response.status}: ${response.data?.msg || response.statusText}`)
+      if (Array.isArray(response.data?.error) && response.data.error.length > 0) {
+        throw new Error(response.data.error.join(', '))
       }
     } catch (error) {
       throw new Error(error.response ? `${error.response.status}: ${error.response.statusText}` : error.message)
@@ -105,62 +137,28 @@ export class BaseWrapper {
    *
    * @param {string} endpoint - The API endpoint template with path placeholders.
    * @param {Object} params - The parameters object containing both path variable values and query parameters.
-   * @returns {{baseEndpoint: string, queryParams: Object}} An object containing the base endpoint with replaced path placeholders and query parameters.
+   * @returns {{queryEndpoint: string, queryParams: Object}} An object containing the base endpoint with replaced path placeholders and query parameters.
    */
   #prepareEndpoint(endpoint, params) {
-    let baseEndpoint = endpoint
+    let queryEndpoint = endpoint
     const queryParams = {}
 
     Object.entries(params).forEach(([key, value]) => {
       // Check and replace path placeholders
       const pathPlaceholder = `{${key}}`
-      if (baseEndpoint.includes(pathPlaceholder)) {
-        baseEndpoint = baseEndpoint.replace(pathPlaceholder, encodeURIComponent(value))
+      if (queryEndpoint.includes(pathPlaceholder)) {
+        queryEndpoint = queryEndpoint.replace(pathPlaceholder, encodeURIComponent(value))
       } else {
         queryParams[key] = value // Collect as query parameter
       }
     })
 
     // After replacing, check if any path placeholders are left unreplaced
-    const remainingPathPlaceholders = baseEndpoint.match(/\{([^}]+)\}/g)
+    const remainingPathPlaceholders = queryEndpoint.match(/\{([^}]+)\}/g)
     if (remainingPathPlaceholders) {
       throw new Error(`Missing values for parameters: ${remainingPathPlaceholders.join(", ")}`)
     }
 
-    return { baseEndpoint, queryParams }
-  }
-
-  /**
-   * Signs a message using HMAC-SHA256 with the API secret and encodes it in base64.
-   *
-   * @param {string} message - The message to be signed.
-   * @returns {string} The base64-encoded signature.
-   */
-  #signMessage(message) {
-    return crypto.createHmac('sha256', this.#authentication.apiSecret)
-      .update(message)
-      .digest('base64')
-  }
-
-  /**
-   * Generates authentication headers for Kucoin API requests.
-   *
-   * @param {string} endpoint - The API endpoint.
-   * @param {string} method - The HTTP method (GET, POST, etc.).
-   * @param {string} [body=""] - The request body for POST requests.
-   * @returns {Object} The required headers for authenticated API requests.
-   */
-  #getAuthHeaders(path, request, nonce) {
-    const message       = qs.stringify(request)
-    const secret_buffer = new Buffer(this.#authentication.apiKey, 'base64')
-    const hash          = new crypto.createHash('sha256')
-    const hmac          = new crypto.createHmac('sha512', secret_buffer)
-    const hash_digest   = hash.update(nonce + message).digest('binary')
-    const hmac_digest   = hmac.update(path + hash_digest, 'binary').digest('base64')
-
-    return {
-      'API-Key': this.#authentication.apiKey,
-      'API-Sign': signature,
-    }
+    return { queryEndpoint, queryParams }
   }
 }

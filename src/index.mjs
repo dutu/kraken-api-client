@@ -1,6 +1,6 @@
 import { RestWrapper } from './rest/restWrapper.mjs'
 import { createWebSocketClient } from './webSocket/webSocketClient.mjs'
-import { createOrderbookSubscriptionManager } from './orderbook/subscriptionManager.mjs'
+import { createOrderbookSubscriptionManager } from './orderbook/orderbookSubscriptionManager.mjs'
 import { noop } from './utils/noop.mjs'
 
 /**
@@ -11,8 +11,8 @@ import { noop } from './utils/noop.mjs'
  * @typedef {Object} Authentication
  * @property {string} [apiKey] - The API key.
  * @property {string} [apiSecret] - The API secret.
- * @property {function} [nonce] - Function for generating a valid nonce.
- * @property {function} [otp] - Function for generating  one time password.
+ * @property {function} [generateNonce] - Function for generating a valid nonce.
+ * @property {function} [generateOtp] - Function for generating  one time password.
  */
 
 /**
@@ -92,7 +92,7 @@ export class Kraken {
     this.ws = createWebSocketClient(authenticationToUse, serviceConfigToUse)
 
     // Add orderbook manager
-    this.orderbook = createOrderbookSubscriptionManager(authenticationToUse, serviceConfigToUse)
+    this.orderbook = createOrderbookSubscriptionManager(serviceConfigToUse)
   }
 }
 
