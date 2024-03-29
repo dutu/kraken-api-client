@@ -12,7 +12,7 @@ export function createWebSocketClient(authentication, serviceConfig) {
   const log = serviceConfig.logger
   const isWebSocketPrivate = authentication !== undefined
   let webSocket
-  let wsInfo = isWebSocketPrivate ? { endPoint: webSocketEndpoints.private } : { endPoint: webSocketEndpoints.public }
+  let wsInfo
   let isAvailable = false
   let rest
 
@@ -24,7 +24,14 @@ export function createWebSocketClient(authentication, serviceConfig) {
     if (isWebSocketPrivate) {
       // Websocket is private
       const { result: tokenInfo } = await rest.getWebsocketsToken()
-      wsInfo.token = tokenInfo.token
+      wsInfo = {
+        endPoint: webSocketEndpoints.private,
+        token: tokenInfo.token,
+      }
+    } else {
+      wsInfo = {
+        endPoint: webSocketEndpoints.public
+      }
     }
 
     return new WebSocket(wsInfo.endPoint)
