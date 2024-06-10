@@ -43,6 +43,7 @@ export class OrderbookManager extends EventEmitter {
   #orderbook = undefined
   #isActive = true
   #minModifiedIndex
+  #isSubscribedTo = new Set()
 
   constructor({ symbol, depth = 1000 }, serviceConfig) {
     super()
@@ -73,9 +74,6 @@ export class OrderbookManager extends EventEmitter {
       .unsubscribe({
         symbol: [this.#symbol],
       })
-    this.#webSocketClient.close()
-    this.#webSocketClient = null
-    this.#orderbook = undefined
   }
 
   /*
@@ -83,24 +81,37 @@ export class OrderbookManager extends EventEmitter {
    */
   async #setupWebSocketClient() {
     this.#webSocketClient.on('open', () => {
-      this.#log.debug(`Kraken orderbook WebSocket open.`)
+      this.#log.debug(`Orderbook ${this.#symbol}: WebSocket open.`)
       this.#instrument = undefined
       this.#orderbook = undefined
     })
 
     this.#webSocketClient.on('error', (data) => {
-      this.#log.debug(`Kraken orderbook WebSocket error:\n ${JSON.stringify(data, null, 2)}`)
+      this.#log.debug(`Orderbook ${this.#symbol}: WebSocket error:\n ${JSON.stringify(data, null, 2)}`)
     })
 
     this.#webSocketClient.on('close', () => {
-      this.#log.debug(`Kraken orderbook WebSocket closed.`)
+      this.#log.debug(`Orderbook ${this.#symbol}: WebSocket closed.`)
       this.#orderbook = undefined
       this.emit('orderbook', undefined)
     })
 
     this.#webSocketClient.instrument
-      .on('subscribe', (data) => {})
-      .on('unsubscribe', (data) => {})
+      .on('subscribe', (data) => {
+        this.#isSubscribedTo.add('instrument')
+        if (this.#isSubscribedTo.size === 2) {
+          this.#log.debug(`Orderbook ${this.#symbol}: Subscribed.`)
+        }
+      })
+      .on('unsubscribe', (data) => {
+        this.#isSubscribedTo.delete('instrument')
+        if (this.#isSubscribedTo.size === 0) {
+          this.#webSocketClient.close()
+          this.#webSocketClient = null
+          this.#orderbook = undefined
+          this.#log.debug(`Orderbook ${this.#symbol}: Unsubscribed.`)
+        }
+      })
       .on('snapshot', (data) => this.#updateInstrument(data))
       .on('update', (data) => this.#updateInstrument(data))
       .subscribe({
@@ -109,8 +120,21 @@ export class OrderbookManager extends EventEmitter {
       })
 
     this.#webSocketClient.book
-      .on('subscribe', (data) => {})
-      .on('unsubscribe', (data) => {})
+      .on('subscribe', (data) => {
+        this.#isSubscribedTo.add('book')
+        if (this.#isSubscribedTo.size === 2) {
+          this.#log.debug(`Orderbook ${this.#symbol}: Subscribed.`)
+        }
+      })
+      .on('unsubscribe', (data) => {
+        this.#isSubscribedTo.delete('book')
+        if (this.#isSubscribedTo.size === 0) {
+          this.#webSocketClient.close()
+          this.#webSocketClient = null
+          this.#orderbook = undefined
+          this.#log.debug(`Orderbook ${this.#symbol}: Unsubscribed.`)
+        }
+      })
       .on('snapshot', (data) => this.#onOrderbookSnapshot(data))
       .on('update', (data) => this.#onOrderbookUpdate(data))
       .subscribe({
@@ -171,7 +195,7 @@ export class OrderbookManager extends EventEmitter {
         this.emit('orderbook', this.#orderbook, { minModifiedIndex: this.#minModifiedIndex })
       }
     } else {
-      this.#log.info(`Error: Kraken orderbook checksum mismatch. Expected ${this.#orderbook.checksum}, calculated ${checksum}.`)
+      this.#log.notice(`Orderbook ${this.#symbol}: Checksum mismatch. Expected ${this.#orderbook.checksum}, calculated ${checksum}.`)
       this.#minModifiedIndex = 0
       this.#orderbook = undefined
       this.#webSocketClient.refresh()
@@ -237,7 +261,7 @@ export class OrderbookManager extends EventEmitter {
       // Verify that 'asks' or 'bids' are arrays
       if (!Array.isArray(obSide)) {
         // If not, the orderbook update message is invalid
-        this.#log.debug(`Error: Kraken orderbook update message is invalid:\n${JSON.stringify(data, null, 2)}`)
+        this.#log.debug(`Orderbook ${this.#symbol}: update message is invalid:\n${JSON.stringify(data, null, 2)}`)
         this.#webSocketClient.refresh()
       }
 

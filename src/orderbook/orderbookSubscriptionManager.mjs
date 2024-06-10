@@ -9,7 +9,7 @@ export function createOrderbookSubscriptionManager(serviceConfig) {
 }
 
 class OrderbookSubscriptionManager extends EventEmitter {
-  #orderbookManagers
+  #orderbookManagers = {}
   #depth
   #serviceConfig
   constructor(serviceConfig) {
@@ -26,16 +26,13 @@ class OrderbookSubscriptionManager extends EventEmitter {
    *
    */
   subscribe({ symbol, depth }) {
-    if (this.#orderbookManagers !== undefined) {
-      throw new Error('Can only subscribe once')
-    }
-
     this.#validateSymbols(symbol)
     this.#depth = depth
-    this.#orderbookManagers = {}
     for (const symb of symbol) {
-      this.#orderbookManagers[symb] = new OrderbookManager({ symbol: symb }, this.#serviceConfig )
-      this.#orderbookManagers[symb].on('orderbook', this.#onOrderbook)
+      if (!this.#orderbookManagers[symb]) {
+        this.#orderbookManagers[symb] = new OrderbookManager({ symbol: symb }, this.#serviceConfig )
+        this.#orderbookManagers[symb].on('orderbook', this.#onOrderbook)
+      }
     }
   }
 
@@ -53,6 +50,8 @@ class OrderbookSubscriptionManager extends EventEmitter {
       }
 
       this.#orderbookManagers[symb].destroy()
+      this.#orderbookManagers[symb].off('orderbook', this.#onOrderbook)
+      delete this.#orderbookManagers[symb]
     }
   }
 
