@@ -138,10 +138,10 @@ export class ChannelManager extends EventEmitter {
   }
 
   #onUnsubscribe = (data) => {
-    this.#webSocket.off('subscribe', this.#onSubscribe)
-    this.#webSocket.off('unsubscribe', this.#onUnsubscribe)
-    this.#webSocket.off('message', this.#onMessage)
     if (data.channel === this.#channel) {
+      this.#webSocket.off('subscribe', this.#onSubscribe)
+      this.#webSocket.off('unsubscribe', this.#onUnsubscribe)
+      this.#webSocket.off('message', this.#onMessage)
       this.emit('unsubscribe', data)
     }
   }
