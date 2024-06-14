@@ -62,18 +62,11 @@ export class OrderbookManager extends EventEmitter {
    * Orderbook instance is no longer needed or before creating a new instance to avoid memory leaks
    * and ensure proper release of resources.
    */
-  destroy() {
+  dispose() {
     this.#isActive = false
+    this.#orderbook = undefined
+    this.#webSocketClient.close()
     this.emit('orderbook', undefined)
-    this.#webSocketClient.book
-      .unsubscribe({
-        symbol: [this.#symbol],
-        depth: this.#depth,
-      })
-    this.#webSocketClient.instrument
-      .unsubscribe({
-        symbol: [this.#symbol],
-      })
   }
 
   /*
@@ -97,19 +90,10 @@ export class OrderbookManager extends EventEmitter {
     })
 
     this.#webSocketClient.instrument
-      .on('subscribe', (data) => {
+      .on('subscribed', (data) => {
         this.#isSubscribedTo.add('instrument')
         if (this.#isSubscribedTo.size === 2) {
           this.#log.debug(`Orderbook ${this.#symbol}: Subscribed.`)
-        }
-      })
-      .on('unsubscribe', (data) => {
-        this.#isSubscribedTo.delete('instrument')
-        if (this.#isSubscribedTo.size === 0) {
-          this.#webSocketClient.close()
-          this.#webSocketClient = null
-          this.#orderbook = undefined
-          this.#log.debug(`Orderbook ${this.#symbol}: Unsubscribed.`)
         }
       })
       .on('snapshot', (data) => this.#updateInstrument(data))
@@ -120,19 +104,10 @@ export class OrderbookManager extends EventEmitter {
       })
 
     this.#webSocketClient.book
-      .on('subscribe', (data) => {
+      .on('subscribed', (data) => {
         this.#isSubscribedTo.add('book')
         if (this.#isSubscribedTo.size === 2) {
           this.#log.debug(`Orderbook ${this.#symbol}: Subscribed.`)
-        }
-      })
-      .on('unsubscribe', (data) => {
-        this.#isSubscribedTo.delete('book')
-        if (this.#isSubscribedTo.size === 0) {
-          this.#webSocketClient.close()
-          this.#webSocketClient = null
-          this.#orderbook = undefined
-          this.#log.debug(`Orderbook ${this.#symbol}: Unsubscribed.`)
         }
       })
       .on('snapshot', (data) => this.#onOrderbookSnapshot(data))

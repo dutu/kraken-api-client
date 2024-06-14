@@ -1,12 +1,30 @@
 import WebSocket from 'isomorphic-ws'
+import EventEmitter from 'eventemitter3'
 import { ForeverWebSocket } from 'forever-websocket'
-import { ChannelManager, channels, privateSubscriptionChannels, publicSubscriptionChannels } from './channelManager.mjs'
 import { RestWrapper } from '../rest/restWrapper.mjs'
+import { uniqueId } from '../utils/uniqueId.mjs'
 
 const webSocketEndpoints = {
   public: 'wss://ws.kraken.com/v2',
   private: 'wss://ws-auth.kraken.com/v2',
 }
+
+const channels = {
+  executions: 'executions',
+  balances: 'balances',
+  ticker: 'ticker',
+  book: 'book',
+  level3: 'level3',
+  ohlc: 'ohlc',
+  trade: 'trade',
+  instrument: 'instrument',
+  status: 'status',
+  heartbeat: 'heartbeat',
+  ping: 'ping',
+}
+
+const privateSubscriptionChannels = new Set([channels.executions, channels.balances, channels.level3])
+const publicSubscriptionChannels = new Set([channels.ticker, channels.book, channels.ohlc, channels.trade, channels.instrument])
 
 export function createWebSocketClient(authentication, serviceConfig) {
   const log = serviceConfig.logger
@@ -15,9 +33,12 @@ export function createWebSocketClient(authentication, serviceConfig) {
   let wsInfo
   let isAvailable = false
   let rest
+  const subscriptionKeys = {}
 
-  if (isWebSocketPrivate) {
-    rest = new RestWrapper(authentication, serviceConfig)
+  const validateSymbol = (symbol) => {
+    if (!Array.isArray(symbol)) {
+      throw new Error(`Invalid symbol "${symbol}"`)
+    }
   }
 
   const createWebSocket = async () => {
@@ -37,10 +58,64 @@ export function createWebSocketClient(authentication, serviceConfig) {
     return new WebSocket(wsInfo.endPoint)
   }
 
-  const resentSubscribe = () => {
-    for (const channel of [...publicSubscriptionChannels, ...privateSubscriptionChannels]) {
-      webSocket[channel].sendSubscribeToResubscribe()
+  const registerSubscription = (subscription) => {
+    const { token,  symbol: symbolArray = [], ...subscriptionObject} = subscription.params
+    validateSymbol(symbolArray)
+    const subscriptionKey = JSON.stringify(subscriptionObject)
+
+    subscriptionKeys[subscriptionKey] ??= new Set()
+    symbolArray.forEach(symbol => {
+      subscriptionKeys[subscriptionKey].add(symbol)
+    })
+  }
+
+  const sendSubscription = (subscription) => {
+    // Check if WebSocket connection is ready
+    if (webSocket?.readyState === 1) {
+      const subscriptionToSend = { ...subscription, req_id: uniqueId() }
+      if (privateSubscriptionChannels.has(subscription.params.channel)) {
+        subscriptionToSend.params.token = webSocket.info.token
+      }
+
+      webSocket.send(subscriptionToSend)
     }
+  }
+
+  const sendAllSubscriptions = () => {
+    const subscriptions = []
+    Object.entries(subscriptionKeys).forEach(([subscriptionKey, symbolsSet]) => {
+      const params = JSON.parse(subscriptionKey)
+      if (symbolsSet.size > 0) {
+        params.symbol = Array.from(symbolsSet)
+      }
+
+      const subscription = {
+        method: 'subscribe',
+        params: {
+          ...params,
+        },
+      }
+
+      sendSubscription(subscription)
+    })
+  }
+
+  const subscribe = (channel, params) => {
+    const subscription = {
+      method: 'subscribe',
+      params: {
+        ...params,
+        channel,
+      },
+    }
+
+    registerSubscription(subscription)
+    sendSubscription(subscription)
+    return webSocket[channel]
+  }
+
+  if (isWebSocketPrivate) {
+    rest = new RestWrapper(authentication, serviceConfig)
   }
 
   webSocket = new ForeverWebSocket(
@@ -70,30 +145,43 @@ export function createWebSocketClient(authentication, serviceConfig) {
     set(value) { log.warn('isAvailable property is read-only') }
   })
 
-  webSocket.book = new ChannelManager({ channel: 'book', webSocket })
-  webSocket.executions = new ChannelManager({ channel: 'executions', webSocket })
-  webSocket.instrument = new ChannelManager({ channel: 'instrument', webSocket })
-  webSocket.ohlc = new ChannelManager({ channel: 'ohlc', webSocket })
-  webSocket.ticker = new ChannelManager({ channel: 'ticker', webSocket })
-  webSocket.trade = new ChannelManager({ channel: 'trade', webSocket })
+  // Define User Data channels
+  webSocket.executions = new EventEmitter()
+  webSocket.executions.subscribe = subscribe.bind(this, channels.executions)
+  webSocket.balances = new EventEmitter()
+  webSocket.balances.subscribe = subscribe.bind(this, channels.balances)
+
+  // Define Market Data channels
+  webSocket.ticker = new EventEmitter()
+  webSocket.ticker.subscribe = subscribe.bind(this, channels.ticker)
+  webSocket.book = new EventEmitter()
+  webSocket.book.subscribe = subscribe.bind(this, channels.book)
+  webSocket.ohlc = new EventEmitter()
+  webSocket.ohlc.subscribe = subscribe.bind(this, channels.ohlc)
+  webSocket.trade = new EventEmitter()
+  webSocket.trade.subscribe = subscribe.bind(this, channels.trade)
+  webSocket.instrument = new EventEmitter()
+  webSocket.instrument.subscribe = subscribe.bind(this, channels.instrument)
+
+  // Define Admin channels
+  webSocket.status = new EventEmitter()
+  webSocket.heartbeat = new EventEmitter()
 
   webSocket.on('open', ()=> {
     log.debug(`WebSocket connected to ${wsInfo.endpoint}`)
-    resentSubscribe()
+    sendAllSubscriptions()
   })
 
   webSocket.on('message', (message)=> {
     const data = JSON.parse(message)
+    const channel = data.channel || data.result?.channel
 
-    if (['status', 'heartbeat'].includes(data.channel) || ['pong', 'subscribe', 'unsubscribe'].includes(data.method)) {
-      if (data.channel === 'status') {
-        let status = data.data[0]
-        wsInfo = { ...wsInfo, ...status }
-      }
+    if (channel) {
+      const type = data.method === 'subscribe' && 'subscribed'
+        || data.channel === 'heartbeat' && 'heartbeat'
+        || data.type
 
-      const event = data.channel || data.method
-      webSocket.emit(event, data)
-      log.debug(`WebSocket[${wsInfo.connection_id}] ${event}:\n${JSON.stringify(data, null, 2)}`)
+      webSocket[channel].emit(type, data)
     }
   })
 

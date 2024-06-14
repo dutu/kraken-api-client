@@ -36,25 +36,6 @@ class OrderbookSubscriptionManager extends EventEmitter {
     }
   }
 
-  /**
-   * Unsubscribes from orderbook updates for a list of symbols .
-   *
-   * @param {Object} param0 - Configuration object for unsubscription.
-   * @param {[string]} param0.symbol - The list of symbols of the orderbook to unsubscribe from.
-   * @throws {Error} Throws an error if a symbol has not been subscribed for
-   */
-  unsubscribe({ symbol }) {
-    for (const symb of symbol) {
-      if (!Object.hasOwn(this.#orderbookManagers,symb)){
-        throw new Error(`Subscription for symbol ${symb} does not exist`)
-      }
-
-      this.#orderbookManagers[symb].destroy()
-      this.#orderbookManagers[symb].off('orderbook', this.#onOrderbook)
-      delete this.#orderbookManagers[symb]
-    }
-  }
-
   #onOrderbook = (data, { minModifiedIndex } = {}) => {
     if (data === undefined) {
       this.emit('orderbook', undefined)
