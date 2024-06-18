@@ -168,7 +168,8 @@ export function createWebSocketClient(authentication, serviceConfig) {
   webSocket.heartbeat = new EventEmitter()
 
   webSocket.on('open', ()=> {
-    log.debug(`WebSocket connected to ${wsInfo.endpoint}`)
+    wsInfo.id = uniqueId()
+    log.debug(`WebSocket[${wsInfo.id}] connected to ${wsInfo.endpoint}`)
     sendAllSubscriptions()
   })
 
@@ -186,19 +187,19 @@ export function createWebSocketClient(authentication, serviceConfig) {
   })
 
   webSocket.on('error', (error)=> {
-    log.notice(`WebSocket[${wsInfo?.connection_id || ''}] ${error.message}`)
+    log.notice(`WebSocket[${wsInfo?.id || ''}] ${error.message}`)
   })
 
   webSocket.on('timeout', ()=> {
-    log.notice(`WebSocket[${wsInfo?.connection_id || ''}] timed out`)
+    log.notice(`WebSocket[${wsInfo?.id || ''}] timed out`)
   })
 
   webSocket.on('delay', (retryNumber, delay)=> {
-    log.info(`WebSocket[${wsInfo?.connection_id || ''}] will try reconnecting in ${delay / 1000} seconds`)
+    log.info(`WebSocket[${wsInfo?.id || ''}] will try reconnecting in ${delay / 1000} seconds`)
   })
 
   webSocket.on('connecting', (retryNumber, delay)=> {
-    log.info(`WebSocket[${wsInfo?.connection_id || ''}] connecting... (${retryNumber})`)
+    log.info(`WebSocket[${wsInfo?.id || ''}] connecting... (${retryNumber})`)
   })
 
   webSocket.on('reconnected', (retryNumber, lastConnectedMts)=> {
