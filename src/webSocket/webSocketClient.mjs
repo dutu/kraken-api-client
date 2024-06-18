@@ -203,12 +203,11 @@ export function createWebSocketClient(authentication, serviceConfig) {
   })
 
   webSocket.on('reconnected', (retryNumber, lastConnectedMts)=> {
-    log.info(`WebSocket[${wsInfo?.connection_id || ''}] reconnected after ${(Date.now() - lastConnectedMts) / 1000} seconds (${retryNumber})`)
+    log.info(`WebSocket[${wsInfo?.id || ''}] reconnected after ${(Date.now() - lastConnectedMts) / 1000} seconds (${retryNumber})`)
   })
 
   webSocket.on('close', ()=> {
-    log.notice(`WebSocket[${wsInfo?.connection_id || ''}] closed`)
-    wsInfo = {}
+    log.notice(`WebSocket[${wsInfo?.id || ''}] closed`)
   })
 
   return webSocket
