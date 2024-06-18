@@ -39,7 +39,6 @@ export class OrderbookManager extends EventEmitter {
   #depth
   #instrument
   #log
-  #webSocketClient
   #orderbook = undefined
   #isActive = true
   #minModifiedIndex
@@ -50,9 +49,9 @@ export class OrderbookManager extends EventEmitter {
     this.#symbol = symbol
     this.#depth = depth
     this.#log = serviceConfig.logger
-    this.#webSocketClient = createWebSocketClient(undefined, serviceConfig)
+    this.webSocket = createWebSocketClient(undefined, serviceConfig)
     this.#setupWebSocketClient()
-    this.#webSocketClient.connect()
+    this.webSocket.connect()
   }
 
   /**
@@ -65,7 +64,7 @@ export class OrderbookManager extends EventEmitter {
   dispose() {
     this.#isActive = false
     this.#orderbook = undefined
-    this.#webSocketClient.close()
+    this.webSocket.close()
     this.emit('orderbook', undefined)
   }
 
@@ -73,23 +72,23 @@ export class OrderbookManager extends EventEmitter {
    * Initiate a WebSocket client to receive orderbook updates
    */
   async #setupWebSocketClient() {
-    this.#webSocketClient.on('open', () => {
+    this.webSocket.on('open', () => {
       this.#log.debug(`Orderbook ${this.#symbol}: WebSocket open.`)
       this.#instrument = undefined
       this.#orderbook = undefined
     })
 
-    this.#webSocketClient.on('error', (data) => {
+    this.webSocket.on('error', (data) => {
       this.#log.debug(`Orderbook ${this.#symbol}: WebSocket error:\n ${JSON.stringify(data, null, 2)}`)
     })
 
-    this.#webSocketClient.on('close', () => {
+    this.webSocket.on('close', () => {
       this.#log.debug(`Orderbook ${this.#symbol}: WebSocket closed.`)
       this.#orderbook = undefined
       this.emit('orderbook', undefined)
     })
 
-    this.#webSocketClient.instrument
+    this.webSocket.instrument
       .on('subscribed', (data) => {
         this.#isSubscribedTo.add('instrument')
         if (this.#isSubscribedTo.size === 2) {
@@ -103,7 +102,7 @@ export class OrderbookManager extends EventEmitter {
         symbol: [this.#symbol],
       })
 
-    this.#webSocketClient.book
+    this.webSocket.book
       .on('subscribed', (data) => {
         this.#isSubscribedTo.add('book')
         if (this.#isSubscribedTo.size === 2) {
@@ -173,7 +172,7 @@ export class OrderbookManager extends EventEmitter {
       this.#log.notice(`Orderbook ${this.#symbol}: Checksum mismatch. Expected ${this.#orderbook.checksum}, calculated ${checksum}.`)
       this.#minModifiedIndex = 0
       this.#orderbook = undefined
-      this.#webSocketClient.refresh()
+      this.webSocket.refresh()
     }
   }
 
@@ -237,7 +236,7 @@ export class OrderbookManager extends EventEmitter {
       if (!Array.isArray(obSide)) {
         // If not, the orderbook update message is invalid
         this.#log.debug(`Orderbook ${this.#symbol}: update message is invalid:\n${JSON.stringify(data, null, 2)}`)
-        this.#webSocketClient.refresh()
+        this.webSocket.refresh()
       }
 
       for(const change of obSide) {
