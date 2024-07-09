@@ -34,6 +34,7 @@ export function createWebSocketClient(authentication, serviceConfig) {
   let isAvailable = false
   let rest
   const subscriptionKeys = {}
+  const requestsCallbacks = new Map()
 
   const validateSymbol = (symbol) => {
     if (!Array.isArray(symbol)) {
@@ -114,6 +115,27 @@ export function createWebSocketClient(authentication, serviceConfig) {
     return webSocket[channel]
   }
 
+  const request = (method, params) => {
+    const requestToSend = {
+      method,
+      params: {
+        ...params,
+        token: webSocket.info.token
+      },
+      req_id: uniqueId(),
+    }
+
+    return new Promise((resolve, reject) => {
+      requestsCallbacks.set(requestToSend.req_id, { resolve, reject})
+      try {
+        webSocket.send(requestToSend)
+      } catch (e) {
+        requestsCallbacks.delete(requestToSend.req_id)
+        reject(e)
+      }
+    })
+  }
+
   if (isWebSocketPrivate) {
     rest = new RestWrapper(authentication, serviceConfig)
   }
@@ -167,6 +189,8 @@ export function createWebSocketClient(authentication, serviceConfig) {
   webSocket.status = new EventEmitter()
   webSocket.heartbeat = new EventEmitter()
 
+  webSocket.addOrder = ({ params }) => request('add_order', params)
+
   webSocket.on('open', ()=> {
     wsInfo.id = uniqueId()
     log.debug(`WebSocket[${wsInfo.id}] connected to ${wsInfo.endpoint}`)
@@ -183,6 +207,15 @@ export function createWebSocketClient(authentication, serviceConfig) {
         || data.type
 
       webSocket[channel].emit(type, data)
+      return
+    }
+
+    if (data.req_id) {
+      const resolve = requestsCallbacks.get(data.req_id)?.resolve
+      if (resolve) {
+        requestsCallbacks.delete(data.req_id)
+        resolve(data)
+      }
     }
   })
 

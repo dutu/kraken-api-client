@@ -29,7 +29,7 @@ import { noop } from './utils/noop.mjs'
 
 export class Kraken {
   /**
-   * Initializes the Kucoin API client with the provided credentials and service configuration.
+   * Initializes the Kraken API client with the provided credentials and service configuration.
    * If any credential is provided, all credentials (apiKey, apiSecret, apiPassphrase, apiKeyVersion) must be provided.
    * This setup is necessary for authenticated requests, while public API calls do not require credentials.
    * The `serviceConfig` parameter allows for custom configuration of the client, including logging based on syslog levels.
