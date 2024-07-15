@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 /* eslint-disable */
+// @ts-nocheck
 "use strict";
 
 const RAW_RUNTIME_STATE =
@@ -26,13 +27,13 @@ const RAW_RUNTIME_STATE =
       [null, {\
         "packageLocation": "./",\
         "packageDependencies": [\
-          ["axios", "npm:1.6.8"],\
+          ["axios", "npm:1.7.2"],\
           ["crc-32", "npm:1.2.2"],\
           ["eventemitter3", "npm:5.0.1"],\
           ["forever-websocket", "npm:0.4.1"],\
           ["isomorphic-ws", "virtual:86008d4043b73bb56849cac2beac9370e113e5f559c07d09a261c81d61cb8c95a8a5315c3beaa0a9b721919bffca0552fecd748bbe1c1cf3f08e415b5a0262d6#npm:5.0.0"],\
           ["uniqid", "npm:5.4.0"],\
-          ["ws", "virtual:eb21d033241071be87b07e5360d825800999582043f8c6bd9a61b0f1d8a6f72311d0db511e6a0f6b0a09089af35b7028cbfa65e5b83cf92d87565644c469fa42#npm:8.16.0"]\
+          ["ws", "virtual:86008d4043b73bb56849cac2beac9370e113e5f559c07d09a261c81d61cb8c95a8a5315c3beaa0a9b721919bffca0552fecd748bbe1c1cf3f08e415b5a0262d6#npm:8.18.0"]\
         ],\
         "linkType": "SOFT"\
       }]\
@@ -47,11 +48,11 @@ const RAW_RUNTIME_STATE =
       }]\
     ]],\
     ["axios", [\
-      ["npm:1.6.8", {\
-        "packageLocation": "../../AppData/Local/Yarn/Berry/cache/axios-npm-1.6.8-85cf1e7152-10c0.zip/node_modules/axios/",\
+      ["npm:1.7.2", {\
+        "packageLocation": "../../AppData/Local/Yarn/Berry/cache/axios-npm-1.7.2-c89264f6f7-10c0.zip/node_modules/axios/",\
         "packageDependencies": [\
-          ["axios", "npm:1.6.8"],\
-          ["follow-redirects", "virtual:85cf1e7152e3c0d8e39e61ad2b81b59a43fb6bdb8f3bf49869bb97804b1403ecaee4505fcb0d4869cfdd99ee3eaa880b79498575407fb770c800bf64c64156ec#npm:1.15.6"],\
+          ["axios", "npm:1.7.2"],\
+          ["follow-redirects", "virtual:c89264f6f79513b22a07db5e53adf77eba9e48634cf471fb55eb2e75d910809bbac48d9ce7a920c63c8ff2780624fff91866270d8acf614cbd0c4cb748a8b29a#npm:1.15.6"],\
           ["form-data", "npm:4.0.0"],\
           ["proxy-from-env", "npm:1.1.0"]\
         ],\
@@ -103,10 +104,10 @@ const RAW_RUNTIME_STATE =
         ],\
         "linkType": "SOFT"\
       }],\
-      ["virtual:85cf1e7152e3c0d8e39e61ad2b81b59a43fb6bdb8f3bf49869bb97804b1403ecaee4505fcb0d4869cfdd99ee3eaa880b79498575407fb770c800bf64c64156ec#npm:1.15.6", {\
-        "packageLocation": "./.yarn/__virtual__/follow-redirects-virtual-7bb5ea93fd/3/AppData/Local/Yarn/Berry/cache/follow-redirects-npm-1.15.6-50635fe51d-10c0.zip/node_modules/follow-redirects/",\
+      ["virtual:c89264f6f79513b22a07db5e53adf77eba9e48634cf471fb55eb2e75d910809bbac48d9ce7a920c63c8ff2780624fff91866270d8acf614cbd0c4cb748a8b29a#npm:1.15.6", {\
+        "packageLocation": "./.yarn/__virtual__/follow-redirects-virtual-d6f128c480/3/AppData/Local/Yarn/Berry/cache/follow-redirects-npm-1.15.6-50635fe51d-10c0.zip/node_modules/follow-redirects/",\
         "packageDependencies": [\
-          ["follow-redirects", "virtual:85cf1e7152e3c0d8e39e61ad2b81b59a43fb6bdb8f3bf49869bb97804b1403ecaee4505fcb0d4869cfdd99ee3eaa880b79498575407fb770c800bf64c64156ec#npm:1.15.6"],\
+          ["follow-redirects", "virtual:c89264f6f79513b22a07db5e53adf77eba9e48634cf471fb55eb2e75d910809bbac48d9ce7a920c63c8ff2780624fff91866270d8acf614cbd0c4cb748a8b29a#npm:1.15.6"],\
           ["@types/debug", null],\
           ["debug", null]\
         ],\
@@ -153,7 +154,7 @@ const RAW_RUNTIME_STATE =
         "packageDependencies": [\
           ["isomorphic-ws", "virtual:86008d4043b73bb56849cac2beac9370e113e5f559c07d09a261c81d61cb8c95a8a5315c3beaa0a9b721919bffca0552fecd748bbe1c1cf3f08e415b5a0262d6#npm:5.0.0"],\
           ["@types/ws", null],\
-          ["ws", "virtual:eb21d033241071be87b07e5360d825800999582043f8c6bd9a61b0f1d8a6f72311d0db511e6a0f6b0a09089af35b7028cbfa65e5b83cf92d87565644c469fa42#npm:8.16.0"]\
+          ["ws", "virtual:86008d4043b73bb56849cac2beac9370e113e5f559c07d09a261c81d61cb8c95a8a5315c3beaa0a9b721919bffca0552fecd748bbe1c1cf3f08e415b5a0262d6#npm:8.18.0"]\
         ],\
         "packagePeers": [\
           "@types/ws",\
@@ -167,13 +168,13 @@ const RAW_RUNTIME_STATE =
         "packageLocation": "./",\
         "packageDependencies": [\
           ["kraken-api-client", "workspace:."],\
-          ["axios", "npm:1.6.8"],\
+          ["axios", "npm:1.7.2"],\
           ["crc-32", "npm:1.2.2"],\
           ["eventemitter3", "npm:5.0.1"],\
           ["forever-websocket", "npm:0.4.1"],\
           ["isomorphic-ws", "virtual:86008d4043b73bb56849cac2beac9370e113e5f559c07d09a261c81d61cb8c95a8a5315c3beaa0a9b721919bffca0552fecd748bbe1c1cf3f08e415b5a0262d6#npm:5.0.0"],\
           ["uniqid", "npm:5.4.0"],\
-          ["ws", "virtual:eb21d033241071be87b07e5360d825800999582043f8c6bd9a61b0f1d8a6f72311d0db511e6a0f6b0a09089af35b7028cbfa65e5b83cf92d87565644c469fa42#npm:8.16.0"]\
+          ["ws", "virtual:86008d4043b73bb56849cac2beac9370e113e5f559c07d09a261c81d61cb8c95a8a5315c3beaa0a9b721919bffca0552fecd748bbe1c1cf3f08e415b5a0262d6#npm:8.18.0"]\
         ],\
         "linkType": "SOFT"\
       }]\
@@ -222,6 +223,30 @@ const RAW_RUNTIME_STATE =
           ["ws", "npm:8.16.0"]\
         ],\
         "linkType": "SOFT"\
+      }],\
+      ["npm:8.18.0", {\
+        "packageLocation": "../../AppData/Local/Yarn/Berry/cache/ws-npm-8.18.0-56f68bc4d6-10c0.zip/node_modules/ws/",\
+        "packageDependencies": [\
+          ["ws", "npm:8.18.0"]\
+        ],\
+        "linkType": "SOFT"\
+      }],\
+      ["virtual:86008d4043b73bb56849cac2beac9370e113e5f559c07d09a261c81d61cb8c95a8a5315c3beaa0a9b721919bffca0552fecd748bbe1c1cf3f08e415b5a0262d6#npm:8.18.0", {\
+        "packageLocation": "./.yarn/__virtual__/ws-virtual-0cea49d65e/3/AppData/Local/Yarn/Berry/cache/ws-npm-8.18.0-56f68bc4d6-10c0.zip/node_modules/ws/",\
+        "packageDependencies": [\
+          ["ws", "virtual:86008d4043b73bb56849cac2beac9370e113e5f559c07d09a261c81d61cb8c95a8a5315c3beaa0a9b721919bffca0552fecd748bbe1c1cf3f08e415b5a0262d6#npm:8.18.0"],\
+          ["@types/bufferutil", null],\
+          ["@types/utf-8-validate", null],\
+          ["bufferutil", null],\
+          ["utf-8-validate", null]\
+        ],\
+        "packagePeers": [\
+          "@types/bufferutil",\
+          "@types/utf-8-validate",\
+          "bufferutil",\
+          "utf-8-validate"\
+        ],\
+        "linkType": "HARD"\
       }],\
       ["virtual:eb21d033241071be87b07e5360d825800999582043f8c6bd9a61b0f1d8a6f72311d0db511e6a0f6b0a09089af35b7028cbfa65e5b83cf92d87565644c469fa42#npm:8.16.0", {\
         "packageLocation": "./.yarn/__virtual__/ws-virtual-b67c02ce91/3/AppData/Local/Yarn/Berry/cache/ws-npm-8.16.0-46943f6199-10c0.zip/node_modules/ws/",\
@@ -1566,6 +1591,12 @@ class ProxiedFS extends FakeFS {
   rmdirSync(p, opts) {
     return this.baseFs.rmdirSync(this.mapToBase(p), opts);
   }
+  async rmPromise(p, opts) {
+    return this.baseFs.rmPromise(this.mapToBase(p), opts);
+  }
+  rmSync(p, opts) {
+    return this.baseFs.rmSync(this.mapToBase(p), opts);
+  }
   async linkPromise(existingP, newP) {
     return this.baseFs.linkPromise(this.mapToBase(existingP), this.mapToBase(newP));
   }
@@ -1946,6 +1977,18 @@ class NodeFS extends BasePortableFakeFS {
   }
   rmdirSync(p, opts) {
     return this.realFs.rmdirSync(npath.fromPortablePath(p), opts);
+  }
+  async rmPromise(p, opts) {
+    return await new Promise((resolve, reject) => {
+      if (opts) {
+        this.realFs.rm(npath.fromPortablePath(p), opts, this.makeCallback(resolve, reject));
+      } else {
+        this.realFs.rm(npath.fromPortablePath(p), this.makeCallback(resolve, reject));
+      }
+    });
+  }
+  rmSync(p, opts) {
+    return this.realFs.rmSync(npath.fromPortablePath(p), opts);
   }
   async linkPromise(existingP, newP) {
     return await new Promise((resolve, reject) => {
@@ -2602,6 +2645,20 @@ class MountFS extends BasePortableFakeFS {
       return mountFs.rmdirSync(subPath, opts);
     });
   }
+  async rmPromise(p, opts) {
+    return await this.makeCallPromise(p, async () => {
+      return await this.baseFs.rmPromise(p, opts);
+    }, async (mountFs, { subPath }) => {
+      return await mountFs.rmPromise(subPath, opts);
+    });
+  }
+  rmSync(p, opts) {
+    return this.makeCallSync(p, () => {
+      return this.baseFs.rmSync(p, opts);
+    }, (mountFs, { subPath }) => {
+      return mountFs.rmSync(subPath, opts);
+    });
+  }
   async linkPromise(existingP, newP) {
     return await this.makeCallPromise(newP, async () => {
       return await this.baseFs.linkPromise(existingP, newP);
@@ -3240,6 +3297,7 @@ const SYNC_IMPLEMENTATIONS = /* @__PURE__ */ new Set([
   `realpathSync`,
   `renameSync`,
   `rmdirSync`,
+  `rmSync`,
   `statSync`,
   `symlinkSync`,
   `truncateSync`,
@@ -3275,6 +3333,7 @@ const ASYNC_IMPLEMENTATIONS = /* @__PURE__ */ new Set([
   `readlinkPromise`,
   `renamePromise`,
   `rmdirPromise`,
+  `rmPromise`,
   `statPromise`,
   `symlinkPromise`,
   `truncatePromise`,
@@ -5298,6 +5357,27 @@ class ZipFS extends BasePortableFakeFS {
     const index = this.entries.get(resolvedP);
     if (typeof index === `undefined`)
       throw EINVAL(`rmdir '${p}'`);
+    this.deleteEntry(p, index);
+  }
+  async rmPromise(p, opts) {
+    return this.rmSync(p, opts);
+  }
+  rmSync(p, { recursive = false } = {}) {
+    if (this.readOnly)
+      throw EROFS(`rm '${p}'`);
+    if (recursive) {
+      this.removeSync(p);
+      return;
+    }
+    const resolvedP = this.resolveFilename(`rm '${p}'`, p);
+    const directoryListing = this.listings.get(resolvedP);
+    if (!directoryListing)
+      throw ENOTDIR(`rm '${p}'`);
+    if (directoryListing.size > 0)
+      throw ENOTEMPTY(`rm '${p}'`);
+    const index = this.entries.get(resolvedP);
+    if (typeof index === `undefined`)
+      throw EINVAL(`rm '${p}'`);
     this.deleteEntry(p, index);
   }
   hydrateDirectory(resolvedP) {
