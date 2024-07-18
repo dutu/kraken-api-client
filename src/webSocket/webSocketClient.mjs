@@ -49,10 +49,12 @@ export function createWebSocketClient(authentication, serviceConfig) {
       wsInfo = {
         endPoint: webSocketEndpoints.private,
         token: tokenInfo.token,
+        status: {},
       }
     } else {
       wsInfo = {
-        endPoint: webSocketEndpoints.public
+        endPoint: webSocketEndpoints.public,
+        status: {},
       }
     }
 
@@ -205,6 +207,10 @@ export function createWebSocketClient(authentication, serviceConfig) {
       const type = data.method === 'subscribe' && 'subscribed'
         || data.channel === 'heartbeat' && 'heartbeat'
         || data.type
+
+      if (channel === 'status') {
+        wsInfo.status = data.data[0]
+      }
 
       webSocket[channel].emit(type, data)
       return
