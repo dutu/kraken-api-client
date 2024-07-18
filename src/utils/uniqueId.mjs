@@ -1,12 +1,9 @@
-import uniqid from 'uniqid'
-
 /**
- * Generates a unique numerical ID by deducting the milliseconds of the current year's start
- * from the current timestamp and prepending a random part. This method aims to produce a
- * more compact numerical value while retaining uniqueness.
+ * Generates a unique numerical ID by calculating the milliseconds elapsed since the start of the current year
+ * and appending a random part. This method aims to produce a more compact numerical value while retaining uniqueness.
  * @returns {number} A unique numerical ID.
  * @example
- * const id = generateUniqueNumericId();
+ * const id = uniqueId();
  * console.log(id);
  */
 export function uniqueId() {

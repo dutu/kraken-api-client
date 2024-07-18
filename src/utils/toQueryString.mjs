@@ -1,13 +1,8 @@
 /**
- * Converts an object into a URL query string.
- * Each key-value pair in the object is URL-encoded and concatenated with '&' characters.
+ * Converts an object of key-value pairs into a query string.
  *
- * @param {Object} params - The parameters object to be converted into a query string.
- * @returns {string} The URL-encoded query string.
- *
- * @example
- * // returns '?name=JohnDoe&age=30'
- * #toQueryString({ name: 'John Doe', age: 30 })
+ * @param {Object} params - The object containing key-value pairs.
+ * @return {string} - The query string representing the object's key-value pairs.
  */
 export function toQueryString(params) {
   let queryString = Object.entries(params)
