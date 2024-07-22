@@ -192,6 +192,12 @@ export function createWebSocketClient(authentication, serviceConfig) {
   webSocket.heartbeat = new EventEmitter()
 
   webSocket.addOrder = ({ params }) => request('add_order', params)
+  webSocket.editOrder = ({ params }) => request('edit_order', params)
+  webSocket.cancelOrder = ({ params }) => request('cancel_order', params)
+  webSocket.cancelAll = () => request('cancel_order', {})
+  webSocket.cancelAllOrdersAfter = ({ params }) => request('cancel_all_orders_after', params)
+  webSocket.batchAdd = ({ params }) => request('batch_add', params)
+  webSocket.batchCancel = ({ params }) => request('batch_cancel', params)
 
   webSocket.on('open', ()=> {
     wsInfo.id = uniqueId()
