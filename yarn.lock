@@ -12,14 +12,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"axios@npm:^1.7.2":
-  version: 1.7.2
-  resolution: "axios@npm:1.7.2"
+"axios@npm:^1.7.9":
+  version: 1.7.9
+  resolution: "axios@npm:1.7.9"
   dependencies:
     follow-redirects: "npm:^1.15.6"
     form-data: "npm:^4.0.0"
     proxy-from-env: "npm:^1.1.0"
-  checksum: 10c0/cbd47ce380fe045313364e740bb03b936420b8b5558c7ea36a4563db1258c658f05e40feb5ddd41f6633fdd96d37ac2a76f884dad599c5b0224b4c451b3fa7ae
+  checksum: 10c0/b7a41e24b59fee5f0f26c1fc844b45b17442832eb3a0fb42dd4f1430eb4abc571fe168e67913e8a1d91c993232bd1d1ab03e20e4d1fee8c6147649b576fc1b0b
   languageName: node
   linkType: hard
 
@@ -48,7 +48,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eventemitter3@npm:^5.0.0, eventemitter3@npm:^5.0.1":
+"eventemitter3@npm:^5.0.1":
   version: 5.0.1
   resolution: "eventemitter3@npm:5.0.1"
   checksum: 10c0/4ba5c00c506e6c786b4d6262cfbce90ddc14c10d4667e5c83ae993c9de88aa856033994dd2b35b83e8dc1170e224e66a319fa80adc4c32adcd2379bbc75da814
@@ -65,13 +65,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"forever-websocket@npm:^0.4.1":
-  version: 0.4.1
-  resolution: "forever-websocket@npm:0.4.1"
+"forever-websocket@npm:^1.0.1":
+  version: 1.0.1
+  resolution: "forever-websocket@npm:1.0.1"
   dependencies:
-    eventemitter3: "npm:^5.0.0"
-    ws: "npm:^8.13.0"
-  checksum: 10c0/3dd3198059cd80d9f57405ca174f911e6182417d6e6259fe37f592e323cd458b12d6c5d910ffe703876510778335ae22b9945f3cfe33c654e206e966e13b4ccf
+    eventemitter3: "npm:^5.0.1"
+    isomorphic-ws: "npm:^5.0.0"
+    lodash: "npm:^4.17.21"
+    ws: "npm:^8.18.0"
+  checksum: 10c0/2c02dfac13d06aeb18aa5bd81565552dd1c1f802203f98d3d790e99588e8575d5f898d00b3b6d4fe19f9765cbe6d9edc6dbb96b47ccb0c95f66d90f596e97ecb
   languageName: node
   linkType: hard
 
@@ -99,15 +101,22 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "kraken-api-client@workspace:."
   dependencies:
-    axios: "npm:^1.7.2"
+    axios: "npm:^1.7.9"
     crc-32: "npm:^1.2.2"
     eventemitter3: "npm:^5.0.1"
-    forever-websocket: "npm:^0.4.1"
+    forever-websocket: "npm:^1.0.1"
     isomorphic-ws: "npm:^5.0.0"
     uniqid: "npm:^5.4.0"
     ws: "npm:^8.18.0"
   languageName: unknown
   linkType: soft
+
+"lodash@npm:^4.17.21":
+  version: 4.17.21
+  resolution: "lodash@npm:4.17.21"
+  checksum: 10c0/d8cbea072bb08655bb4c989da418994b073a608dffa608b09ac04b43a791b12aeae7cd7ad919aa4c925f33b48490b5cfe6c1f71d827956071dae2e7bb3a6b74c
+  languageName: node
+  linkType: hard
 
 "mime-db@npm:1.52.0":
   version: 1.52.0
@@ -136,21 +145,6 @@ __metadata:
   version: 5.4.0
   resolution: "uniqid@npm:5.4.0"
   checksum: 10c0/ef0d7c7ae26d5d7eb632ec9a1548575c855edfa422fd1ade1ee82d7d60bddef24574a53a5ec716db887ec763e4f5dea6dae4dfc1918e2ee5fda35dc43a6c0b7a
-  languageName: node
-  linkType: hard
-
-"ws@npm:^8.13.0":
-  version: 8.16.0
-  resolution: "ws@npm:8.16.0"
-  peerDependencies:
-    bufferutil: ^4.0.1
-    utf-8-validate: ">=5.0.2"
-  peerDependenciesMeta:
-    bufferutil:
-      optional: true
-    utf-8-validate:
-      optional: true
-  checksum: 10c0/a7783bb421c648b1e622b423409cb2a58ac5839521d2f689e84bc9dc41d59379c692dd405b15a997ea1d4c0c2e5314ad707332d0c558f15232d2bc07c0b4618a
   languageName: node
   linkType: hard
 
