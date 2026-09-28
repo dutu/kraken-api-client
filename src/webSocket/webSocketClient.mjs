@@ -3,8 +3,9 @@ import EventEmitter from 'eventemitter3'
 import { ForeverWebSocket } from 'forever-websocket'
 import { RestWrapper } from '../rest/restWrapper.mjs'
 import { uniqueId } from '../utils/uniqueId.mjs'
+import { maskProxySecrets } from '../proxy/socksProxy.mjs'
 
-const webSocketEndpoints = {
+const defaultWebSocketEndpoints = {
   public: 'wss://ws.kraken.com/v2',
   private: 'wss://ws-auth.kraken.com/v2',
 }
@@ -28,6 +29,9 @@ const publicSubscriptionChannels = new Set([channels.ticker, channels.book, chan
 
 export function createWebSocketClient(authentication, serviceConfig) {
   const log = serviceConfig.logger
+  const agent = serviceConfig.agent
+  const socksProxyUri = serviceConfig.socksProxyUri
+  const webSocketEndpoints = { ...defaultWebSocketEndpoints, ...serviceConfig.webSocketEndpoints }
   const isWebSocketPrivate = authentication !== undefined
   let webSocket
   let wsInfo
@@ -58,7 +62,7 @@ export function createWebSocketClient(authentication, serviceConfig) {
       }
     }
 
-    return new WebSocket(wsInfo.endPoint)
+    return new WebSocket(wsInfo.endPoint, agent ? { agent } : undefined)
   }
 
   const registerSubscription = (subscription) => {
@@ -169,6 +173,11 @@ export function createWebSocketClient(authentication, serviceConfig) {
     set(value) { log.warn('isAvailable property is read-only') }
   })
 
+  Object.defineProperty(webSocket, 'agent', {
+    get() { return agent },
+    set(value) { log.warning('agent property is read-only') }
+  })
+
   // Define User Data channels
   webSocket.executions = new EventEmitter()
   webSocket.executions.subscribe = subscribe.bind(this, channels.executions)
@@ -232,7 +241,7 @@ export function createWebSocketClient(authentication, serviceConfig) {
   })
 
   webSocket.on('error', (error)=> {
-    log.notice(`WebSocket[${wsInfo?.id || ''}] ${error.message}`)
+    log.notice(`WebSocket[${wsInfo?.id || ''}] ${maskProxySecrets(error.message, socksProxyUri)}`)
   })
 
   webSocket.on('timeout', ()=> {

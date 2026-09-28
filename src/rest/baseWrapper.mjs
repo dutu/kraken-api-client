@@ -2,6 +2,7 @@ import crypto from 'crypto'
 import axios from 'axios'
 import { toQueryString } from '../utils/toQueryString.mjs'
 import { createNonceGenerator } from './nonceGenerator.mjs'
+import { maskProxySecrets } from '../proxy/socksProxy.mjs'
 
 /**
  * Creates authentication signature.
@@ -34,15 +35,30 @@ const createAuthenticationSignature = function createAuthenticationSignature(pat
 export class BaseWrapper {
   #authentication
   #log
-  #client
+  #agent
+  #socksProxyUri
   #baseURLs = {
     production: `https://api.kraken.com`,
   }
 
-  constructor({ apiKey, apiSecret, generateNonce = createNonceGenerator(), generateOtp } = {}, { logger }) {
+  constructor(
+    { apiKey, apiSecret, generateNonce = createNonceGenerator(), generateOtp } = {},
+    { logger, agent, socksProxyUri, baseUrls } = {},
+  ) {
     this.#authentication = { apiKey, apiSecret, generateNonce, generateOtp }
     this.#log = logger
-    this.#client = axios.create()
+    this.#agent = agent
+    this.#socksProxyUri = socksProxyUri
+    this.#baseURLs = { ...this.#baseURLs, ...baseUrls }
+  }
+
+  /**
+   * The shared SOCKS proxy agent (when `serviceConfig.socksProxyUri` is set), otherwise `undefined`.
+   *
+   * @returns {import('socks-proxy-agent').SocksProxyAgent | undefined}
+   */
+  get agent() {
+    return this.#agent
   }
 
   /**
@@ -89,6 +105,14 @@ export class BaseWrapper {
       timeout: 5000,
     }
 
+    // Route the request through the shared SOCKS agent (when configured) and prevent
+    // axios from resolving any other proxy, so there is never a direct fallback.
+    if (this.#agent) {
+      axiosConfig.httpAgent = this.#agent
+      axiosConfig.httpsAgent = this.#agent
+      axiosConfig.proxy = false
+    }
+
     if(requiresAuth) {
       queryParams.nonce = this.#authentication.generateNonce()
       if (this.#authentication.generateOtp) {
@@ -125,7 +149,8 @@ export class BaseWrapper {
         throw new Error(response.data.error.join(', '))
       }
     } catch (error) {
-      throw new Error(error.response ? `${error.response.status}: ${error.response.statusText}` : error.message)
+      const message = error.response ? `${error.response.status}: ${error.response.statusText}` : error.message
+      throw new Error(maskProxySecrets(message, this.#socksProxyUri))
     }
 
     return response.data

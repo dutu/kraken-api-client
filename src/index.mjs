@@ -2,6 +2,7 @@ import { RestWrapper } from './rest/restWrapper.mjs'
 import { createWebSocketClient } from './webSocket/webSocketClient.mjs'
 import { createOrderbookSubscriptionManager } from './orderbook/orderbookSubscriptionManager.mjs'
 import { noop } from './utils/noop.mjs'
+import { createSocksAgent } from './proxy/socksProxy.mjs'
 
 /**
  * Kraken API client, providing access to various trading operations.
@@ -28,6 +29,8 @@ import { noop } from './utils/noop.mjs'
  */
 
 export class Kraken {
+  #agent
+
   /**
    * Initializes the Kraken API client with the provided credentials and service configuration.
    * If any credential is provided, all credentials (apiKey, apiSecret, apiPassphrase, apiKeyVersion) must be provided.
@@ -37,7 +40,14 @@ export class Kraken {
    * @param {Authentication} [authentication={}] - The API parameters needed for authenticated requests.
    * @param {Object} [serviceConfig={}] - Configuration for additional service features.
    * @param {Logger} [serviceConfig.logger={}] - Logger configuration with methods for different syslog levels.
+   * @param {string} [serviceConfig.socksProxyUri] - Optional SOCKS proxy URI (e.g. `socks5://user:pass@host:1080`)
+   *   used to route REST requests, WebSocket token requests and WebSocket upgrades through a SOCKS proxy.
+   *   An explicit host and port are required. Invalid values throw at construction, and when set the client
+   *   never falls back to a direct connection.
+   * @param {Object<string,string>} [serviceConfig.baseUrls] - Optional overrides for the REST base URLs.
+   * @param {{public?: string, private?: string}} [serviceConfig.webSocketEndpoints] - Optional overrides for the WebSocket endpoints.
    * @throws {Error} If some but not all API credentials are provided.
+   * @throws {Error} If `serviceConfig.socksProxyUri` is set but invalid.
    *
    * @example
    * const kucoinClient = new Kucoin({
@@ -87,12 +97,28 @@ export class Kraken {
       logger: loggerToUse,
     }
 
+    // Create a single SOCKS agent shared by REST, WebSocket token requests and WebSocket upgrades.
+    // The URI is validated here so invalid proxy settings fail fast at construction.
+    this.#agent = serviceConfig.socksProxyUri === undefined
+      ? undefined
+      : createSocksAgent(serviceConfig.socksProxyUri)
+    serviceConfigToUse.agent = this.#agent
+
     // Instantiate wrapper classes with either the complete credentials or undefined
     this.rest = new RestWrapper(authenticationToUse, serviceConfigToUse)
     this.ws = createWebSocketClient(authenticationToUse, serviceConfigToUse)
 
     // Add orderbook manager
     this.orderbook = createOrderbookSubscriptionManager(serviceConfigToUse)
+  }
+
+  /**
+   * The shared SOCKS proxy agent, or `undefined` when no proxy is configured.
+   *
+   * @returns {import('socks-proxy-agent').SocksProxyAgent | undefined}
+   */
+  get agent() {
+    return this.#agent
   }
 }
 

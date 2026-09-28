@@ -34,6 +34,7 @@ const RAW_RUNTIME_STATE =
           ["forever-websocket", "npm:1.1.0"],\
           ["isomorphic-ws", "virtual:dbb0b480ab00de9a9fdf05e4016ea592fc56e3536a5efdb7f8254233f4710c2103e62866500ce25c08d024ce7a132297aeb08ce54ad1e0ba0a7e329e76879243#npm:5.0.0"],\
           ["kraken-api-client", "workspace:."],\
+          ["socks-proxy-agent", "npm:8.0.5"],\
           ["uniqid", "npm:5.4.0"],\
           ["ws", "virtual:dbb0b480ab00de9a9fdf05e4016ea592fc56e3536a5efdb7f8254233f4710c2103e62866500ce25c08d024ce7a132297aeb08ce54ad1e0ba0a7e329e76879243#npm:8.22.0"]\
         ],\
@@ -46,6 +47,13 @@ const RAW_RUNTIME_STATE =
         "packageDependencies": [\
           ["agent-base", "npm:6.0.2"],\
           ["debug", "virtual:428f325a939c2653ad822eb3d75efb02ac311523dd0d4f9645afc39ea00bd86eceac35a9d59c9b6977d76b670a4ef0ae057ea572338a44729aa592711a8c05a3#npm:4.4.3"]\
+        ],\
+        "linkType": "HARD"\
+      }],\
+      ["npm:7.1.4", {\
+        "packageLocation": "../../.yarn/berry/cache/agent-base-npm-7.1.4-cb8b4604d5-10c0.zip/node_modules/agent-base/",\
+        "packageDependencies": [\
+          ["agent-base", "npm:7.1.4"]\
         ],\
         "linkType": "HARD"\
       }]\
@@ -362,6 +370,15 @@ const RAW_RUNTIME_STATE =
         "linkType": "HARD"\
       }]\
     ]],\
+    ["ip-address", [\
+      ["npm:10.7.2", {\
+        "packageLocation": "../../.yarn/berry/cache/ip-address-npm-10.7.2-c11033b133-10c0.zip/node_modules/ip-address/",\
+        "packageDependencies": [\
+          ["ip-address", "npm:10.7.2"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
     ["isomorphic-ws", [\
       ["npm:5.0.0", {\
         "packageLocation": "../../.yarn/berry/cache/isomorphic-ws-npm-5.0.0-9c72251c2d-10c0.zip/node_modules/isomorphic-ws/",\
@@ -394,6 +411,7 @@ const RAW_RUNTIME_STATE =
           ["forever-websocket", "npm:1.1.0"],\
           ["isomorphic-ws", "virtual:dbb0b480ab00de9a9fdf05e4016ea592fc56e3536a5efdb7f8254233f4710c2103e62866500ce25c08d024ce7a132297aeb08ce54ad1e0ba0a7e329e76879243#npm:5.0.0"],\
           ["kraken-api-client", "workspace:."],\
+          ["socks-proxy-agent", "npm:8.0.5"],\
           ["uniqid", "npm:5.4.0"],\
           ["ws", "virtual:dbb0b480ab00de9a9fdf05e4016ea592fc56e3536a5efdb7f8254233f4710c2103e62866500ce25c08d024ce7a132297aeb08ce54ad1e0ba0a7e329e76879243#npm:8.22.0"]\
         ],\
@@ -442,6 +460,38 @@ const RAW_RUNTIME_STATE =
         "packageLocation": "../../.yarn/berry/cache/proxy-from-env-npm-2.1.0-ce678f045b-10c0.zip/node_modules/proxy-from-env/",\
         "packageDependencies": [\
           ["proxy-from-env", "npm:2.1.0"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
+    ["smart-buffer", [\
+      ["npm:4.2.0", {\
+        "packageLocation": "../../.yarn/berry/cache/smart-buffer-npm-4.2.0-5ac3f668bb-10c0.zip/node_modules/smart-buffer/",\
+        "packageDependencies": [\
+          ["smart-buffer", "npm:4.2.0"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
+    ["socks", [\
+      ["npm:2.8.10", {\
+        "packageLocation": "../../.yarn/berry/cache/socks-npm-2.8.10-ac11676661-10c0.zip/node_modules/socks/",\
+        "packageDependencies": [\
+          ["ip-address", "npm:10.7.2"],\
+          ["smart-buffer", "npm:4.2.0"],\
+          ["socks", "npm:2.8.10"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
+    ["socks-proxy-agent", [\
+      ["npm:8.0.5", {\
+        "packageLocation": "../../.yarn/berry/cache/socks-proxy-agent-npm-8.0.5-24d77a90dc-10c0.zip/node_modules/socks-proxy-agent/",\
+        "packageDependencies": [\
+          ["agent-base", "npm:7.1.4"],\
+          ["debug", "virtual:428f325a939c2653ad822eb3d75efb02ac311523dd0d4f9645afc39ea00bd86eceac35a9d59c9b6977d76b670a4ef0ae057ea572338a44729aa592711a8c05a3#npm:4.4.3"],\
+          ["socks", "npm:2.8.10"],\
+          ["socks-proxy-agent", "npm:8.0.5"]\
         ],\
         "linkType": "HARD"\
       }]\
