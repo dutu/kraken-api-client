@@ -14,7 +14,7 @@ export class RestWrapper extends BaseWrapper {
    */
   getServerTime(params) {
     return this.makeRequest({
-      endpoint:  '/0/public/Time"',
+      endpoint:  '/0/public/Time',
       method: 'GET',
       baseUrl: 'public',
       params,
@@ -70,7 +70,7 @@ export class RestWrapper extends BaseWrapper {
     return this.makeRequest({
       endpoint:  '/0/public/Depth',
       method: 'GET',
-      baseUrl: 'futures',
+      baseUrl: 'public',
       params,
     })
   }

@@ -39,6 +39,8 @@ export class BaseWrapper {
   #socksProxyUri
   #baseURLs = {
     production: `https://api.kraken.com`,
+    public: `https://api.kraken.com`,
+    futures: `https://futures.kraken.com`,
   }
 
   constructor(

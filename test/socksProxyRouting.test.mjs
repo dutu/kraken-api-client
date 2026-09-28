@@ -257,3 +257,38 @@ test('proxy credentials are masked in request errors', async () => {
     await target.close()
   }
 })
+
+test('the default public base URL is used when only the proxy is configured', async () => {
+  // failConnects keeps the test hermetic: the proxy records the CONNECT target without dialing it.
+  const proxy = await new Socks5Proxy({ failConnects: true }).listen()
+  const kraken = new Kraken(undefined, { socksProxyUri: proxy.uri('socks5h') })
+
+  try {
+    // Before the fix this rejected with "Invalid URL" and never reached the proxy.
+    await assert.rejects(() => kraken.rest.getSystemStatus({}))
+    assert.deepEqual(proxy.connections, [
+      { version: 5, command: 1, addressType: 3, host: 'api.kraken.com', port: 443 },
+    ])
+  } finally {
+    kraken.ws.close()
+    await proxy.close()
+  }
+})
+
+test('getServerTime and getOrderBook use the public endpoint paths', async () => {
+  const target = await startHttpTarget()
+  const kraken = new Kraken(undefined, { baseUrls: { public: target.httpUrl } })
+
+  try {
+    await kraken.rest.getServerTime({})
+    await kraken.rest.getOrderBook({ pair: 'XBTUSD' })
+
+    assert.deepEqual(
+      target.state.requests.map((request) => request.url),
+      ['/0/public/Time', '/0/public/Depth?pair=XBTUSD'],
+    )
+  } finally {
+    kraken.ws.close()
+    await target.close()
+  }
+})

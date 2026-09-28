@@ -30,9 +30,10 @@ const kraken = new Kraken(
 
 ### Advanced endpoint overrides
 
-`serviceConfig.baseUrls` (merged over `{ production: 'https://api.kraken.com' }`) and
-`serviceConfig.webSocketEndpoints` (merged over the public/private `wss://ws*.kraken.com` defaults)
-override the REST and WebSocket endpoints. They are intended for advanced setups and tests.
+`serviceConfig.baseUrls` (merged over
+`{ production: 'https://api.kraken.com', public: 'https://api.kraken.com', futures: 'https://futures.kraken.com' }`)
+and `serviceConfig.webSocketEndpoints` (merged over the public/private `wss://ws*.kraken.com`
+defaults) override the REST and WebSocket endpoints. They are intended for advanced setups and tests.
 
 ## Testing
 
