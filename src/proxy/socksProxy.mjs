@@ -2,8 +2,8 @@ import { SocksProxyAgent } from 'socks-proxy-agent'
 
 /**
  * The SOCKS URL protocols accepted for `serviceConfig.socksProxyUri`.
- * `socks:` and `socks5h:` let the proxy resolve the destination hostname,
- * while `socks4:`, `socks4a:` and `socks5:` resolve it locally first.
+ * `socks:`, `socks4a:` and `socks5h:` let the proxy resolve the destination hostname,
+ * while `socks4:` and `socks5:` resolve it locally first.
  */
 export const SUPPORTED_SOCKS_PROTOCOLS = ['socks:', 'socks4:', 'socks4a:', 'socks5:', 'socks5h:']
 
