@@ -1,9 +1,9 @@
 {
   "name": "kraken-api-client",
-  "version": "0.1.2",
+  "version": "0.2.0-dev0",
   "description": "Kraken API client for REST and WebSocket API",
   "type": "module",
-  "author": "dutu <dutu@protonmail.com>",
+  "author": "dutu",
   "exports": "./src/index.mjs",
   "repository": {
     "type": "git",
@@ -25,14 +25,14 @@
     "trading"
   ],
   "license": "MIT",
-  "packageManager": "yarn@4.6.0",
+  "packageManager": "yarn@4.18.1",
   "dependencies": {
-    "axios": "^1.7.9",
+    "axios": "^1.20.0",
     "crc-32": "^1.2.2",
-    "eventemitter3": "^5.0.1",
-    "forever-websocket": "^1.0.1",
+    "eventemitter3": "^5.0.4",
+    "forever-websocket": "^1.1.0",
     "isomorphic-ws": "^5.0.0",
     "uniqid": "^5.4.0",
-    "ws": "^8.18.0"
+    "ws": "^8.22.0"
   }
 }
