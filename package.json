@@ -1,6 +1,6 @@
 {
   "name": "kraken-api-client",
-  "version": "0.2.0-dev0",
+  "version": "0.2.0",
   "description": "Kraken API client for REST and WebSocket API",
   "type": "module",
   "author": "dutu",
