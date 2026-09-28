@@ -1,4 +1,4 @@
-# kraken-newapi-client
+# kraken-api-client
 
 ## Configuration
 
